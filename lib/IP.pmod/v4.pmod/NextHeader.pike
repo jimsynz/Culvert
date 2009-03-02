@@ -1,0 +1,15 @@
+constant HOPBYHOP 0
+constant ICMPv4 1
+constant IGMPv4 2
+constant IPinIP 4
+constant TCP 6
+constant EGP 8
+constant UDP 17
+constant IPv6 41
+constant ROUTE 43
+constant FRAG 44
+constant RSVP 46
+constant ESP 50
+constant ICMPv6 58
+constant NONE 59
+constant DOPTS 60

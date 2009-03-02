@@ -1,0 +1,26 @@
+            1    unreach         Destination unreachable
+            2    toobig          Packet too big
+            3    timex           Time exceeded
+            4    paramprob       Invalid IPv6 header
+            128  echoreq         Echo service request
+            129  echorep         Echo service reply
+            130  groupqry        Group membership query
+            130  listqry         Multicast listener query
+            131  grouprep        Group membership report
+            131  listenrep       Multicast listener report
+            132  groupterm       Group membership termination
+            132  listendone      Multicast listerner done
+            133  routersol       Router solicitation
+            134  routeradv       Router advertisement
+            135  neighbrsol      Neighbor solicitation
+            136  neighbradv      Neighbor advertisement
+            137  redir           Shorter route exists
+            138  routrrenum      Route renumbering
+            139  fqdnreq         FQDN query
+            139  niqry           Node information query
+            139  wrureq          Who-are-you request
+            140  fqdnrep         FQDN reply
+            140  nirep           Node information reply
+            140  wrurep          Who-are-you reply
+            200  mtraceresp      mtrace response
+            201  mtrace          mtrace messages

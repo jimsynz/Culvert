@@ -1,0 +1,13 @@
+            0    noroute-unr     unreach     No route to destination
+            1    admin-unr       unreach     Administratively prohibited
+            2    beyond-unr      unreach     Beyond scope of source address
+            2    notnbr-unr      unreach     Not a neighbor (obselete)
+            3    addr-unr        unreach     Address unreachable
+            4    port-unr        unreach     Port unreachable
+            0    transit         timex       Time exceeded in transit
+            1    reassemb        timex       Time exceeded in reassembly
+            0    badhead         paramprob   Erroneous header field
+            1    nxthdr          paramprob   Unrecognized next header
+            2                    redir       Unrecognized option
+            0    redironlink     redir       Redirection to on-link node
+            1    redirrouter     redir       Redirection to better router

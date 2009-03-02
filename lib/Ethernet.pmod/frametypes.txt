@@ -1,0 +1,26 @@
+0x0800 Internet Protocol, Version 4 (IPv4)
+0x0806 Address Resolution Protocol (ARP)
+0x8035 Reverse Address Resolution Protocol (RARP)
+0x809b AppleTalk (Ethertalk)
+0x80f3 AppleTalk Address Resolution Protocol (AARP)
+0x8100 IEEE 802.1Q-tagged frame
+0x8137 Novell IPX (alt)
+0x8138 Novell
+0x86DD Internet Protocol, Version 6 (IPv6)
+0x8819 CobraNet
+0x88a8 Provider Bridging (IEEE 802.1ad)
+0x8847 MPLS unicast
+0x8848 MPLS multicast
+0x8863 PPPoE Discovery Stage
+0x8864 PPPoE Session Stage
+0x888E EAP over LAN (IEEE 802.1X)
+0x889A HyperSCSI (SCSI over Ethernet)
+0x88A2 ATA over Ethernet
+0x88A4 EtherCAT Protocol
+0x88CD SERCOS-III
+0x88D8 Circuit Emulation Services over Ethernet (MEF-8)
+0x88E5 MAC security (IEEE 802.1AE)
+0x8906 Fibre Channel over Ethernet
+0x8914 FCoE initialization protocol
+0x9100 Q-in-Q
+0xCAFE Veritas Low Latency Transport (LLT)
