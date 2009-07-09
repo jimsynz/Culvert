@@ -35,7 +35,7 @@ static void expire() {
   int old = time() - TTL;
   foreach(indices(dns_cache), string ip) {
     if (dns_cache[ip]->t < old) {
-      write("removing %O\n", dns_cache[ip]);
+      //write("removing %O\n", dns_cache[ip]);
       m_delete(dns_cache, ip);
     }
   }

@@ -1,4 +1,7 @@
+#define LOCK __key = Thread.Mutex()->lock(1);
+#define UNLOCK __key = 0;
 
+static object __key;
 
 static mapping flows;
 static int max;
@@ -10,12 +13,14 @@ static int total_packets;
 static int total_flows;
 
 void create(void|int _max) {
+  LOCK
   flows = ([]);
   max = _max;
   write("Starting FlowEngine.\n");
 }
 
 void packet(object ip) {
+  LOCK
   total_packets++;
   total_bytes += ip->len;
   string proto;
@@ -56,11 +61,14 @@ void set_flow_statechange_cb(function cb) {
 }
 
 static void tcp(object ip) {
+  UNLOCK
   object tcp = IP.Protocol.TCP.Packet(ip->data);
   string _hash = hash(ip, tcp);
+  LOCK
   if (flows[_hash])
     flows[_hash]->next(ip, tcp);
   else {
+    UNLOCK
     object flow = IP.Protocol.TCP.Flow(ip, tcp);
     add_flow(_hash, flow);
     flow->hash(_hash);
@@ -73,9 +81,11 @@ static void tcp(object ip) {
 static void udp(object ip) {
   object udp = IP.Protocol.UDP.Packet(ip->data);
   string _hash = hash(ip, udp);
+  LOCK
   if (flows[_hash])
     flows[_hash]->next(ip, udp);
   else {
+    UNLOCK
     object flow = IP.Protocol.UDP.Flow(ip, udp);
     add_flow(_hash, flow);
     flow->hash(_hash);
@@ -90,6 +100,7 @@ static void icmp(object ip) {}
 static void icmp6(object ip) {}
 
 void add_flow(string hash, object flow) {
+  LOCK
   if (max) {
     if (sizeof(flows) < max) {
       flows[hash] = flow;
@@ -116,7 +127,7 @@ static void exp_cb(mixed hash) {
     if (_flow_exp_cb)
       _flow_exp_cb(flows[hash]);
     exp_count++;
-    write("removing flow %O\n", flows[hash]->english());
+    //write("removing flow %O\n", flows[hash]->english());
     destruct(flows[hash]);
     m_delete(flows, hash);
   }
@@ -139,6 +150,7 @@ static void state_cb(mixed hash) {
 
 
 mapping status() {
+  LOCK
   array f = values(flows);
   sort(f->bytes, f);
   reverse(f);

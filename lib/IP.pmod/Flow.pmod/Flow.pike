@@ -144,6 +144,10 @@ string english(void|int dns, void|int scope) {
       state = "CLOSE_WAIT";
       dir = "<!>";
       break;
+    default:
+      dir = "<->";
+      state = "ESTABLISHED";
+      break;
   }
   string _src, _dst;
   if (dns) {
@@ -182,7 +186,7 @@ string english(void|int dns, void|int scope) {
   string brate = replace(String.int2size((int)(bytes * 8/ _last)) + "ps", "bytes", "b");
   string prate = replace(String.int2size((int)(packets / _last)) + "ps", ({ "bytes", "b" }), ({ "p", "p" }));
 
-  return sprintf("%s %6s %s %s%s %s %s%s (%s %s, %d packets %s) %s", first, last, protocol->name(), _src, _src_scope, (string)dir, _dst, _dst_scope, replace(String.int2size(bytes), "b", "B"), brate, packets, prate, state);
+  return sprintf("%s %6s %s %s%s %s %s%s (%s %s, %d packets %s) %s", first, last, protocol->name(), _src, _src_scope, dir||"", _dst, _dst_scope, replace(String.int2size(bytes), "b", "B"), brate, packets, prate, state);
 }
 
 //string _sprintf() {
