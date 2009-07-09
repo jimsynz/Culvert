@@ -71,6 +71,10 @@ string hostname() {
     return _hostname = IP.Flow.DNSCache->lookup_ip(inttoip(ip));
 }
 
+string reverse() {
+ return (predef::reverse(inttoip(ip) / ".") * ".") + ".in-addr.arpa";
+}
+
 string scope() {
   string s = "GLOBAL UNICAST";
   if (IP.v4.Prefix("224.0.0.0/4")->contains(this_object())) {

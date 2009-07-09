@@ -79,6 +79,12 @@ string expanded() {
   return inttoipex(ip);
 }
 
+string reverse() {
+  string s = inttoipex(ip);
+  s = replace(s, ":", "");
+  return (predef::reverse(s / "") * ".") + ".ip6.arpa";
+}
+
 string scope() {
   string s = "RESERVED";
   if (IP.v6.Prefix("2000::/3")->contains(this_object())) {
