@@ -11,10 +11,10 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is DogStar SOFTWARE IP.v4 Public Module.
+ * The Original Code is IP.v4 Public Module.
  *
  * The Initial Developer of the Original Code is
- * James Tyson, DogStar SOFTWARE <james@thedogstar.org>.
+ * James Harton, <james@mashd.cc>.
  * Portions created by the Initial Developer are Copyright (C) 2005
  * the Initial Developer. All Rights Reserved.
  *
@@ -23,5 +23,5 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-constant __author = "James Tyson <james@thedogstar.org>";
+constant __author = "James Harton <james@thedogstar.org>";
 constant __version = "1.0";

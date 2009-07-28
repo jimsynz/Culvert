@@ -26,7 +26,7 @@ void|string lookup_ip(string ip, void|function cb) {
 
 static void start() {
   _start++;
-  write("started....\n");
+  //write("started....\n");
   call_out(expire, EXPIRE);
 }
 

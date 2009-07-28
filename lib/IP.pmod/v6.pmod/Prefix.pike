@@ -11,10 +11,10 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is DogStar SOFTWARE IP.v6 Public Module.
+ * The Original Code is IP.v6 Public Module.
  *
  * The Initial Developer of the Original Code is
- * James Tyson, DogStar SOFTWARE <james@thedogstar.org>.
+ * James Harton, <james@mashd.cc>.
  * Portions created by the Initial Developer are Copyright (C) 2005
  * the Initial Developer. All Rights Reserved.
  *
@@ -75,6 +75,22 @@ IP.v6.Address highest() {
 //! Get the length of this prefix (ie, number of "on" bits in the mask).
 int(0..32) length() {
   return len;
+}
+
+//! Return the reverse zones for this prefix.
+array reverse() {
+  // calculate all the reverse zones for a given network prefix.
+  int boundary = length() % 16 == 0 && length() != 0 ? length() / 4 - 1 : length() / 4;
+  int divisor = (boundary + 1) *4;
+  int count = ((int)highest() - (int)network()) / (1 << 128-divisor);
+  write("boundary = %d\ndivisor= %d\ncount = %d\n", boundary, divisor, count);
+  array res = ({});
+  for (int i = 0; i <= count; i++) {
+    object baseaddr = IP.v6.Address((int)network() + ((1<<128-divisor)*i));
+    array octets = (sprintf("%:032x", (int)baseaddr) / "")[0..boundary];
+    res += ({ sprintf("%{%s.%}ip6.arpa", predef::reverse(octets)) });
+  }
+  return res;
 }
 
 //! Test if an IP address is inside this prefix.

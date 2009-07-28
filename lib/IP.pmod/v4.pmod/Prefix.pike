@@ -11,10 +11,10 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is DogStar SOFTWARE IP.v4 Public Module.
+ * The Original Code is IP.v4 Public Module.
  *
  * The Initial Developer of the Original Code is
- * James Tyson, DogStar SOFTWARE <james@thedogstar.org>.
+ * James Harton, <james@mashd.cc>.
  * Portions created by the Initial Developer are Copyright (C) 2005
  * the Initial Developer. All Rights Reserved.
  *
@@ -80,6 +80,20 @@ IP.v4.Address netmask() {
 //! Get the length of this prefix (ie, number of "on" bits in the mask).
 int(0..32) length() {
   return len;
+}
+
+//! Return the reverse zones for this prefix.
+array reverse() {
+  // calculate all the reverse zones for a given network prefix.
+  int boundary = length() % 8 == 0 && length() != 0 ? length() / 8 - 1 : length() / 8;
+  int divisor = (boundary + 1) * 8;
+  int count = ((int)broadcast() - (int)network()) / (1 << 32-divisor);
+  array res = ({});
+  for (int i = 0; i <= count; i++) {
+    array octets = (((string)IP.v4.Address((int)network() + ((1<<32-divisor)*i)) / ".")[0..boundary]);
+    res += ({ sprintf("%{%s.%}in-addr.arpa", predef::reverse(octets)) });
+  }
+  return res;
 }
 
 //! Test if an IP address is inside this prefix.
