@@ -162,7 +162,7 @@ static mapping protos = ([
   255 : "RESERVED"
 ]);
 
-//! Clone an instance of IP.v6.Protocol.
+//! Clone an instance of IP.Protocol.
 //!
 //! @param proto
 //!   The IP protocol number or name.
@@ -178,7 +178,7 @@ void create(int|string proto) {
 }
 
 string _sprintf() {
-  return sprintf("IP.v6.Protocol(%O)", name());
+  return sprintf("IP.Protocol(%O)", name());
 }
 
 void|int|string cast(string type) {
