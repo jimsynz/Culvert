@@ -83,7 +83,7 @@ array reverse() {
   int boundary = length() % 16 == 0 && length() != 0 ? length() / 4 - 1 : length() / 4;
   int divisor = (boundary + 1) *4;
   int count = ((int)highest() - (int)network()) / (1 << 128-divisor);
-  write("boundary = %d\ndivisor= %d\ncount = %d\n", boundary, divisor, count);
+  //write("boundary = %d\ndivisor= %d\ncount = %d\n", boundary, divisor, count);
   array res = ({});
   for (int i = 0; i <= count; i++) {
     object baseaddr = IP.v6.Address((int)network() + ((1<<128-divisor)*i));
