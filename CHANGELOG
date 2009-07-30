@@ -1,0 +1,17 @@
+PikeFlows changelog.
+
+2009/07/30:
+  - Updating flow engine and corresponding modules to use Pike 7.8's
+    getters and setters, and hopefully giving finer-grained threadsafety.
+
+2009/07/29:
+  - Added IP.prefix() helper function which tries to intuit whether to
+    clone an IP.v4.Prefix or IP.v6.Prefix.
+
+2009/07/28:
+  - Added reverse() method to IP.v[4,6].Prefix which returns an array of
+    reverse zones needed to delegate this prefix.
+
+2009/07/09:
+  - Added reverse() method to IP.v[4,6].Address which returns a string
+    giving the full reverse zone name for this address.
