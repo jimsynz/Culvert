@@ -27,9 +27,13 @@
 //! You can use this module by simply casting to an int or string.
 
 
-static int ip;
+static int _ip;
 static inherit "helpers";
-string _hostname;
+static string _hostname;
+static object _mutex = Thread.Mutex();
+
+#define LOCK object __key = _mutex->lock(1);
+#define UNLOCK destruct(__key);
 
 //! Clone the IP.v6.Address module.
 //!
@@ -46,7 +50,16 @@ void create(int|string _ip, void|int dns) {
     IP.Flow.DNSCache->lookup_ip(inttoip(ip), set_hostname);
 }
 
-void set_hostname(string __hostname) {
+int `ip() {
+  return _ip;
+}
+
+int `ip=(int x) {
+  LOCK;
+  return _ip = x;
+}
+
+static void set_hostname(string __hostname) {
   _hostname = __hostname;
 }
 

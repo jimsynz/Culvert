@@ -32,9 +32,12 @@ static mapping options = ([
 
 static multiset lengths = (< 2, 3, 4, 6, 7, 8, 9, 10, 14, 18, 19, 27 >);
 
-int option;
-int value;
-int len;
+static object _mutex = Thread.Mutex();
+#define LOCK object __key = _mutex->lock(1)
+#define UNLOCK destruct(__key)
+static int _option;
+static int _value;
+static int _len;
 
 void create(string opt) {
   option = opt[0];
@@ -46,4 +49,31 @@ void create(string opt) {
 
 void|string name() {
   return options[option];
+}
+
+int `option() {
+  return _option;
+}
+
+int `option=(int x) {
+  LOCK;
+  return _option;
+}
+
+int `value() {
+  return _value;
+}
+
+int `value=(int x) {
+  LOCK;
+  return _value = x;
+}
+
+int `len() {
+  return _len;
+}
+
+int `len=(int x) {
+  LOCK;
+  return _len = x;
 }

@@ -5,23 +5,26 @@
    */
 
 
-object src;
-object dst;
-int bytes;
-int packets;
-array conversation;
-int state;
-string payload;
-object protocol;
-int start_time;
-float time_offset;
+static object _mutex = Thread.Mutex();
+#define LOCK object __key = _mutex->lock(1)
+#define UNLOCK destruct(__key)
+static object _src;
+static object _dst;
+static int _bytes;
+static int _packets;
+static object _conversation;
+static int _state;
+static string _payload;
+static object _protocol;
+static int _start_time;
+static float _time_offset;
 
-static function _log_cb;
-static function _exp_cb;
-static function _state_cb;
-static mixed _hash;
-static mixed timeout_co;
-static mixed log_co;
+static function __log_cb;
+static function __exp_cb;
+static function __state_cb;
+static mixed __hash;
+static mixed _timeout_co;
+static mixed _log_co;
 
 #define EXP_TIMEOUT 120
 #define LOG_TICK 30
@@ -36,7 +39,7 @@ void create(object ip, object layer3) {
   src = ip->src;
   dst = ip->dst;
   protocol = ip->protocol||ip->next_header;
-  conversation = ({});
+  conversation = Locking.Array();
   payload = "";
   start_time = time();
   time_offset = time(start_time);
@@ -192,3 +195,293 @@ string english(void|int dns, void|int scope) {
 //string _sprintf() {
   //return sprintf("Protocol.IP.Protocol.%s.Flow(/* %s */)", protocol->name(), english());
 //}
+
+object `src() {
+  return _src;
+}
+
+object `src=(object x) {
+  return _src = x;
+}
+
+object `dst() {
+  return _dst;
+}
+
+object `dst=(object x) {
+  return _dst = x;
+}
+
+int `bytes() {
+  return _bytes;
+}
+
+int `bytes=(int x) {
+  LOCK;
+  return _bytes = x;
+}
+
+int `packets() {
+  return _packets;
+}
+
+int `packets=(int x) {
+  LOCK;
+  return _packets = x;
+}
+
+object `conversation() {
+  return _conversation;
+}
+
+object `conversation=(object x) {
+  LOCK;
+  return _conversation = x;
+}
+
+int `state() {
+  return _state;
+}
+
+int `state=(int x) {
+  LOCK;
+  return _state = x;
+}
+
+string `payload() {
+  return _payload;
+}
+
+string `payload=(string x) {
+  LOCK;
+  return _payload = x;
+}
+
+object `protocol() {
+  return _protocol;
+}
+
+object `protocol=(object x) {
+  LOCK;
+  return _protocol = x;
+}
+
+int `start_time() {
+  return _start_time;
+}
+
+int `start_time=(int x) {
+  LOCK;
+  return _start_time = x;
+}
+
+float `time_offset() {
+  return _time_offset;
+}
+
+float `time_offset=(float x) {
+  LOCK;
+  return _time_offset = x;
+}
+
+static function `_log_cb() {
+  return __log_cb;
+}
+
+static function `_log_cb=(function x) {
+  LOCK;
+  return __log_cb = x;
+}
+
+static function `_exp_cb() {
+  return __exp_cb;
+}
+
+static function `_exp_cb=(function x) {
+  LOCK;
+  return __exp_cb = x;
+}
+
+static function `_state_cb() {
+  return __state_cb;
+}
+
+static function `_state_cb=(function x) {
+  LOCK;
+  return __state_cb = x;
+}
+
+static mixed `_hash() {
+  return __hash;
+}
+
+static mixed `_hash=(mixed x) {
+  LOCK;
+  return __hash = x;
+}
+
+static mixed `timeout_co() {
+  return _timeout_co;
+}
+
+static mixed `timeout_co=(mixed x) {
+  LOCK;
+  return _timeout_co = x;
+}
+
+static mixed `log_co() {
+  return _log_co;
+}
+
+static mixed `log_co=(mixed x) {
+  LOCK;
+  return _log_co = x;
+}
+
+class LockingArray {
+
+  static array _store = ({});
+  static object _mutex = Thread.Mutex();
+
+  mixed `!(mixed ... args) {
+    LOCK;
+    return _store->`!(args);
+  }
+  mixed `!=(mixed ... args) {
+    LOCK;
+    return _store->`!=(@args);
+  }
+  mixed `%(mixed ... args) {
+    LOCK;
+    return _store->`%(@args);
+  }
+  mixed `&(mixed ...args) {
+    LOCK;
+    return _store->`&(@args);
+  }
+  mixed `()(mixed ... args) {
+    LOCK;
+    return _store->`()(@args);
+  }
+  mixed call_function(mixed ... args) {
+    LOCK;
+    return _store->call_function(@args);
+  }
+  mixed `*(mixed ... args) {
+    LOCK;
+    return _store->`*(@args);
+  }
+  mixed `+(mixed ... args) {
+    LOCK;
+    return _store->`+(@args);
+  }
+  mixed `-(mixed ... args) {
+    LOCK;
+    return _store->`-(@args);
+  }
+  mixed `->(mixed ... args) {
+    LOCK;
+    return _store->`->(@args);
+  }
+  mixed `->=(mixed ... args) {
+    LOCK;
+    return _store->`->=(@args);
+  }
+  mixed `/(mixed ... args) {
+    LOCK;
+    return _store->`/(@args);
+  }
+  mixed `<(mixed ... args) {
+    LOCK;
+    return _store->`<(@args);
+  }
+  mixed `<<(mixed ... args) {
+    LOCK;
+    return _store->`<<(@args);
+  }
+  mixed `<=(mixed ... args) {
+    LOCK;
+    return _store->`<=(@args);
+  }
+  mixed `==(mixed ... args) {
+    LOCK;
+    return _store->`==(@args);
+  }
+  mixed `>(mixed ... args) {
+    LOCK;
+    return _store->`>(@args);
+  }
+  mixed `>=(mixed ... args) {
+    LOCK;
+    return _store->`>=(@args);
+  }
+  mixed `>>(mixed ... args) {
+    LOCK;
+    return _store->`>>(@args);
+  }
+  mixed `[..](mixed ... args) {
+    LOCK;
+    return _store->`[..](@args);
+  }
+  mixed `[](mixed ... args) {
+    LOCK;
+    return _store->`[](@args);
+  }
+  mixed `[]=(mixed ... args) {
+    LOCK;
+    return _store->`[]=(@args);
+  }
+  mixed `^(mixed ... args) {
+    LOCK;
+    return _store->`^(@args);
+  }
+  mixed `|(mixed ... args) {
+    LOCK;
+    return _store->`|(@args);
+  }
+  mixed `~(mixed ... args) {
+    LOCK;
+    return _store->`~(@args);
+  }
+  mixed _values(mixed ... args) {
+    LOCK;
+    return _store->_values(@args);
+  }
+  mixed _sizeof(mixed ... args) {
+    LOCK;
+    return _store->_sizeof(@args);
+  }
+  mixed _indices(mixed ... args) {
+    LOCK;
+    return _store->_indices(@args);
+  }
+  mixed __hash(mixed ... args) {
+    LOCK;
+    return _store->__hash(@args);
+  }
+  mixed `_equal(mixed ... args) {
+    LOCK;
+    return _store->_equal(@args);
+  }
+  mixed `_is_type(mixed ... args) {
+    LOCK;
+    return _store->`_is_type(@args);
+  }
+  mixed `_sprintf(mixed ... args) {
+    LOCK;
+    return _store->`_sprintf(@args);
+  }
+  mixed `_m_delete(mixed ... args) {
+    LOCK;
+    return _store->`_m_delete(@args);
+  }
+  mixed `_get_iterator(mixed ... args) {
+    LOCK;
+    return _store->`_get_iterator(@args);
+  }
+  mixed `_search(mixed ... args) {
+    LOCK;
+    return _store->`_search(@args);
+  }
+
+}

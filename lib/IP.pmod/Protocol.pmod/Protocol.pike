@@ -26,7 +26,10 @@
 //! This module describes an IP protocol.
 //! You should use this module by casting it to a string or int.
 
-static int _protocol;
+static object _mutex = Thread.Mutex();
+#define LOCK object __key = _mutex->lock(1)
+#define UNLOCK destruct(__key)
+static int __protocol;
 
 static mapping protos = ([
   0 : "HOPOPT",
@@ -196,4 +199,13 @@ int numeric() {
 
 void|string name() {
   return protos[_protocol];
+}
+
+static int `_protocol() {
+  return __protocol;
+}
+
+static int `_protocol=(int x) {
+  LOCK;
+  return __protocol = x;
 }

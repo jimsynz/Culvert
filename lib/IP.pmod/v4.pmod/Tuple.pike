@@ -63,11 +63,11 @@ void create(Stdio.File|IP.v4.Address l_addr, void|int l_port, void|IP.v4.Address
   if (l_addr->stat)
     from_fd(l_addr);
   else {
-    _local_addr = l_addr;
-    _remote_addr = r_addr;
-    _local_port = l_port;
-    _remote_port = r_port;
-    _protocol = proto;
+    local_addr = l_addr;
+    remote_addr = r_addr;
+    local_port = l_port;
+    remote_port = r_port;
+    protocol = proto;
   }
 }
 
@@ -76,11 +76,11 @@ static void from_fd(Stdio.File fd) {
   int l_port, r_port;
   sscanf(fd->query_address(), "%s %d", r_addr, r_port);
   sscanf(fd->query_address(1), "%s %d", l_addr, l_port);
-  _local_addr = IP.v4.Address(l_addr);
-  _local_port = l_port;
-  _remote_addr = IP.v4.Address(r_addr);
-  _remote_port = r_port;
-  _protocol = IP.Protocol.Protocol("TCP");
+  local_addr = IP.v4.Address(l_addr);
+  local_port = l_port;
+  remote_addr = IP.v4.Address(r_addr);
+  remote_port = r_port;
+  protocol = IP.Protocol.Protocol("TCP");
 }
 
 string _sprintf() {
@@ -94,58 +94,47 @@ string _sprintf() {
     );
 }
 
-IP.v4.Address local_addr(void|int|string|IP.v4.Address l_addr) {
-  if (objectp(l_addr)) {
-    if (l_addr->numeric && (l_addr->numeric() != _local_addr->numeric()))
-      _local_addr = l_addr;
-    return _local_addr;
-  }
-  else if (stringp(l_addr) || intp(l_addr)) {
-    if (IP.v4.Address(l_addr)->numeric() != _local_addr->numeric())
-      _local_addr = l_addr;
-    return _local_addr;
-  }
-  else 
-    return _local_addr;
+IP.v4.Address `local_addr() {
+  return _local_addr;
 }
 
-IP.v4.Address remote_addr(void|int|string|IP.v4.Address r_addr) {
-  if (objectp(r_addr)) {
-    if (r_addr->numeric && (r_addr->numeric() != _remote_addr->numeric()))
-      _remote_addr = r_addr;
-    return _remote_addr;
-  }
-  else if (stringp(r_addr) || intp(r_addr)) {
-    if (IP.v4.Address(r_addr)->numeric() != _remote_addr->numeric())
-      _remote_addr = IP.v4.Address(r_addr);
-    return _remote_addr;
-  }
-  else 
-    return _remote_addr;
+IP.v4.Address `local_addr(IP.v4.Address x) {
+  LOCK;
+  return _local_addr = x;
 }
 
-void|int local_port(int p) {
-  if (p != _local_port)
-    _local_port = p;
+IP.v4.Address `remote_addr() {
+  return _remote_addr;
+}
+
+IP.v4.Address `remote_addr(IP.v4.Address x) {
+  LOCK;
+  return _remote_addr = x;
+}
+
+int `local_port() {
   return _local_port;
 }
 
-void|int remote_port(int p) {
-  if (p != _remote_port)
-    _remote_port = p;
+int `local_port=(int x) {
+  LOCK;
+  return _local_port = x;
+}
+
+int `remote_port() {
   return _remote_port;
 }
 
-void|IP.Protocol.Protocol protocol(void|int|string|IP.Protocol.Protocol p) {
-  if (objectp(p)) {
-    if (p->name && (p->name() != _protocol->name()))
-      _protocol = p;
-    return _protocol;
-  }
-  else if (stringp(p) || intp(p)) {
-    _protocol = IP.Protocol.Protocol(p);
-    return _protocol;
-  }
-  else
-    return _protocol;
+int `remote_port=(int x) {
+  LOCK;
+  return _remote_port = x;
+}
+
+IP.Protocol.Protocol `protocol() {
+  return _protocol;
+}
+
+IP.Protocol.Protocol `protocol=(IP.Protocol.Protocol x) {
+  LOCK;
+  return _protocol = x;
 }

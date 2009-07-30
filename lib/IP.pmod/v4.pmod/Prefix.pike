@@ -26,9 +26,12 @@
 //! This module describes an IP prefix, ie a network/netmask pair.
 
 
-static object ip;
-static object mask;
-static int len;
+static object _mutex = Thread.Mutex();
+#define LOCK object __key = _mutex->lock(1)
+#define UNLOCK destruct(__key)
+static object _ip;
+static object _mask;
+static int _len;
 static inherit "helpers";
 
 //! Clone the IP.v4.Prefix module.
@@ -82,6 +85,12 @@ int(0..32) length() {
   return len;
 }
 
+//! Get the address space available within this prefix.
+int space() {
+  // like size() we need to add one.
+  return ((int)broadcast() - (int)network()) + 1;
+}
+
 //! Return the reverse zones for this prefix.
 array reverse() {
   // calculate all the reverse zones for a given network prefix.
@@ -128,3 +137,31 @@ int(0..1) `>(IP.v4.Prefix test) {
 int(0..1) `>=(IP.v4.Prefix test) {
   return (test->network() <= network() && test->broadcast() >= broadcast());
 }
+
+static IP.v4.Address `ip() {
+  return _ip;
+}
+
+static IP.v4.Address `ip=(IP.v4.Address x) {
+  LOCK;
+  return _ip = x;
+}
+
+static IP.v4.Address `mask() {
+  return _mask;
+}
+
+static IP.v4.Address `mask=(IP.v4.Address x) {
+  LOCK;
+  return _mask = x;
+}
+
+static int `len() {
+  return _len;
+}
+
+static int `len=(int x) {
+  LOCK;
+  return _len = x;
+}
+

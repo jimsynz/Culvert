@@ -1,4 +1,7 @@
-static int _type;
+static object _mutex = Thread.Mutex();
+#define LOCK object __key = _mutex->lock(1)
+#define UNLOCK destruct(__key)
+static int __type;
 static mapping types = ([
     0 : "ECHOREP",
     3 : "DESTUNREACH",
@@ -57,4 +60,13 @@ void|string name() {
 
 string _sprintf() {
   return sprintf("IP.Protocol.ICMP.Type(%O)", name());
+}
+
+static int `_type() {
+  return __type;
+}
+
+static int `_type=(int x) {
+  LOCK;
+  return __type = x;
 }

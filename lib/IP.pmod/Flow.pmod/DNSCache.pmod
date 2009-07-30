@@ -2,8 +2,11 @@
 #define TTL 300
 #define EXPIRE 30
 
-static mapping dns_cache = ([]);
-static int _start;
+static object _mutex = Thread.Mutex();
+#define LOCK object __key = _mutex->lock(1)
+#define UNLOCK destruct(__key)
+static mapping _dns_cache = ([]);
+static int __start;
 
 void|string lookup_ip(string ip, void|function cb) {
   if (!_start)
@@ -40,4 +43,22 @@ static void expire() {
     }
   }
   call_out(expire, EXPIRE);
+}
+
+mapping `dns_cache() {
+  return _dns_cache;
+}
+
+mapping `dns_cache=(mapping x) {
+  LOCK;
+  return _dns_cache = x;
+}
+
+int `_start() {
+  return __start;
+}
+
+int `_start=(int x) {
+  LOCK;
+  return __start = x;
 }

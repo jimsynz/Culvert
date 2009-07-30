@@ -26,9 +26,12 @@
 //! This module describes an IP prefix, ie a network/netmask pair.
 
 
-static object ip;
-static object mask;
-static int len;
+static object _mutex = Thread.Mutex();
+#define LOCK object __key = _mutex->lock(1)
+#define UNLOCK destruct(__key)
+static object _ip;
+static object _mask;
+static int _len;
 static inherit "helpers";
 
 //! Clone the IP.v6.Prefix module.
@@ -49,6 +52,33 @@ void create(string prefix) {
     mask = IP.v6.Address(_mask);
     len = masktolength(mask);
   }
+}
+
+static IP.v6.Address `ip() {
+  return _ip;
+}
+
+static IP.v6.Address `ip=(IP.v6.Address x) {
+  LOCK;
+  return _ip = x;
+}
+
+static IP.v6.Address `mask() {
+  return _mask;
+}
+
+static IP.v6.Address `mask=(IP.v6.Address x) {
+  LOCK;
+  return _mask = x;
+}
+
+static int `len() {
+  return _len;
+}
+
+static int `len=(int x) {
+  LOCK;
+  return _len = x;
 }
 
 string _sprintf() {
@@ -73,8 +103,14 @@ IP.v6.Address highest() {
 }
 
 //! Get the length of this prefix (ie, number of "on" bits in the mask).
-int(0..32) length() {
+int(0..128) length() {
   return len;
+}
+
+//! Get the address space available within this prefix.
+int space() {
+  // like sizeof() we need to add one.
+  return ((int)highest() - (int)network()) + 1;
 }
 
 //! Return the reverse zones for this prefix.

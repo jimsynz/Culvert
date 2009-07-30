@@ -1,0 +1,5 @@
+PikeFlows is mostly a library for collecting packets off ethernet and building a table of active packet flows, providing accounting or monitoring of each flow.
+
+Included are a demo script which will capture packets off the ethernet and display a "top ten" list of active flows.
+
+PikeFlows natively supports IPv4 and IPv6 addresses.

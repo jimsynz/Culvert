@@ -27,9 +27,12 @@
 //! You can use this module by simply casting to an int or string.
 
 
-static int ip;
+static object _mutex = Thread.Mutex();
+#define LOCK object __key = _mutex->lock(1)
+#define UNLOCK destruct(__key)
+static int _ip;
 static inherit "helpers";
-string _hostname;
+string __hostname;
 
 //! Close the IP.v4.Address module.
 //!
@@ -166,4 +169,22 @@ int(0..1) `>=(IP.v4.Address test) {
     return (numeric() >= test->numeric());
   else 
     return 0;
+}
+
+static int `ip() {
+  return _ip;
+}
+
+static int `ip=(int x) {
+  LOCK;
+  return _ip = x;
+}
+
+static string `_hostname() {
+  return __hostname;
+}
+
+static string `_hostname=(string x) {
+  LOCK;
+  return __hostname = x;
 }

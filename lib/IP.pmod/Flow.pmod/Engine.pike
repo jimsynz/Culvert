@@ -1,26 +1,24 @@
-#define LOCK __key = Thread.Mutex()->lock(1);
-#define UNLOCK __key = 0;
 
-static object __key;
+static object _mutex = Thread.Mutex();
+#define LOCK object __key = _mutex->lock(1)
+#define UNLOCK destruct(__key)
 
-static mapping flows;
-static int max;
-static int drop;
-static int exp_count;
-static function _flow_new_cb, _flow_exp_cb, _flow_log_cb, _flow_state_cb;
-static int total_bytes;
-static int total_packets;
-static int total_flows;
+static object _flows;
+static int _max;
+static int _drop;
+static int _exp_count;
+static function __flow_new_cb, __flow_exp_cb, __flow_log_cb, __flow_state_cb;
+static int _total_bytes;
+static int _total_packets;
+static int _total_flows;
 
 void create(void|int _max) {
-  LOCK
-  flows = ([]);
+  flows = Locking.Mapping();
   max = _max;
   write("Starting FlowEngine.\n");
 }
 
 void packet(object ip) {
-  LOCK
   total_packets++;
   total_bytes += ip->len;
   string proto;
@@ -61,14 +59,11 @@ void set_flow_statechange_cb(function cb) {
 }
 
 static void tcp(object ip) {
-  UNLOCK
   object tcp = IP.Protocol.TCP.Packet(ip->data);
   string _hash = hash(ip, tcp);
-  LOCK
   if (flows[_hash])
     flows[_hash]->next(ip, tcp);
   else {
-    UNLOCK
     object flow = IP.Protocol.TCP.Flow(ip, tcp);
     add_flow(_hash, flow);
     flow->hash(_hash);
@@ -81,11 +76,9 @@ static void tcp(object ip) {
 static void udp(object ip) {
   object udp = IP.Protocol.UDP.Packet(ip->data);
   string _hash = hash(ip, udp);
-  LOCK
   if (flows[_hash])
     flows[_hash]->next(ip, udp);
   else {
-    UNLOCK
     object flow = IP.Protocol.UDP.Flow(ip, udp);
     add_flow(_hash, flow);
     flow->hash(_hash);
@@ -100,10 +93,9 @@ static void icmp(object ip) {}
 static void icmp6(object ip) {}
 
 void add_flow(string hash, object flow) {
-  LOCK
   if (max) {
     if (sizeof(flows) < max) {
-      flows[hash] = flow;
+      flow_set(hash, flow);
       new_cb(hash);
       total_flows++;
     }
@@ -111,7 +103,7 @@ void add_flow(string hash, object flow) {
       drop++;
   }
   else {
-    flows[hash] = flow;
+    flow_set(hash, flow);
     new_cb(hash);
     total_flows++;
   }
@@ -150,7 +142,6 @@ static void state_cb(mixed hash) {
 
 
 mapping status() {
-  LOCK
   array f = values(flows);
   sort(f->bytes, f);
   reverse(f);
@@ -229,3 +220,108 @@ string hash(object ip, object p) {
     f = "UNKNOWN";
   return sprintf("%s %s:%s %s:%s", f, a, c, b, d);
 }
+
+object `flows() {
+  return _flows;
+}
+
+object `flows=(object x) {
+  LOCK;
+  return _flows;
+}
+
+int `max() {
+  return _max;
+}
+
+int `max=(int x) {
+  LOCK;
+  return _max = x;
+}
+
+int `drop() {
+  return _drop;
+}
+
+int `drop=(int x) {
+  LOCK;
+  return _drop = x;
+}
+
+int `exp_count() {
+  return _exp_count;
+}
+
+int `exp_count=(int x) {
+  LOCK;
+  return _exp_count = x;
+}
+
+static function `_flow_new_cb() {
+  return __flow_new_cb;
+}
+
+static function `_flow_new_cb=(function x) {
+  LOCK;
+  return __flow_new_cb = x;
+}
+
+static function `_flow_exp_cb() {
+  return __flow_exp_cb;
+}
+
+static function `_flow_exp_cb=(function x) {
+  LOCK;
+  return __flow_exp_cb = x;
+}
+
+static function `_flow_log_cb() {
+  return __flow_log_cb;
+}
+
+static function `_flow_log_cb=(function x) {
+  LOCK;
+  return __flow_log_cb = x;
+}
+
+static function `_flow_state_cb() {
+  return __flow_state_cb;
+}
+
+static function `_flow_state_cb=(function x) {
+  LOCK;
+  return __flow_state_cb = x;
+}
+
+int `total_bytes() {
+  return _total_bytes;
+}
+
+int `total_bytes=(int x) {
+  LOCK;
+  return _total_bytes = x;
+}
+
+int `total_packets() {
+  return _total_packets;
+}
+
+int `total_packets=(int x) {
+  LOCK;
+  return _total_packets = x;
+}
+
+int `total_flows() {
+  return _total_flows;
+}
+
+int `total_flows=(int x) {
+  LOCK;
+  return _total_flows = x;
+}
+
+mixed flow_set(string hash, mixed val) {
+  LOCK;
+  return flows[hash] = val;
+}
+
