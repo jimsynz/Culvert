@@ -12,7 +12,7 @@ static object _src;
 static object _dst;
 static int _bytes;
 static int _packets;
-static object _conversation;
+static array _conversation;
 static int _state;
 static string _payload;
 static object _protocol;
@@ -39,7 +39,8 @@ void create(object ip, object layer3) {
   src = ip->src;
   dst = ip->dst;
   protocol = ip->protocol||ip->next_header;
-  conversation = Locking.Array();
+  // conversation = Locking.Array();
+  conversation = ({});
   payload = "";
   start_time = time();
   time_offset = time(start_time);
@@ -230,11 +231,11 @@ int `packets=(int x) {
   return _packets = x;
 }
 
-object `conversation() {
+array `conversation() {
   return _conversation;
 }
 
-object `conversation=(object x) {
+array `conversation=(array x) {
   LOCK;
   return _conversation = x;
 }

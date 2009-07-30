@@ -13,7 +13,8 @@ static int _total_packets;
 static int _total_flows;
 
 void create(void|int _max) {
-  flows = Locking.Mapping();
+  //flows = Locking.Mapping();
+  flows = FlowContainer();
   max = _max;
   write("Starting FlowEngine.\n");
 }
@@ -61,8 +62,8 @@ void set_flow_statechange_cb(function cb) {
 static void tcp(object ip) {
   object tcp = IP.Protocol.TCP.Packet(ip->data);
   string _hash = hash(ip, tcp);
-  if (flows[_hash])
-    flows[_hash]->next(ip, tcp);
+  if (flows->get(_hash))
+    flows->get(_hash)->next(ip, tcp);
   else {
     object flow = IP.Protocol.TCP.Flow(ip, tcp);
     add_flow(_hash, flow);
@@ -76,8 +77,8 @@ static void tcp(object ip) {
 static void udp(object ip) {
   object udp = IP.Protocol.UDP.Packet(ip->data);
   string _hash = hash(ip, udp);
-  if (flows[_hash])
-    flows[_hash]->next(ip, udp);
+  if (flows->get(_hash))
+    flows->get(_hash)->next(ip, udp);
   else {
     object flow = IP.Protocol.UDP.Flow(ip, udp);
     add_flow(_hash, flow);
@@ -95,7 +96,7 @@ static void icmp6(object ip) {}
 void add_flow(string hash, object flow) {
   if (max) {
     if (sizeof(flows) < max) {
-      flow_set(hash, flow);
+      flows->set(hash, flow);
       new_cb(hash);
       total_flows++;
     }
@@ -103,7 +104,7 @@ void add_flow(string hash, object flow) {
       drop++;
   }
   else {
-    flow_set(hash, flow);
+    flows->set(hash, flow);
     new_cb(hash);
     total_flows++;
   }
@@ -111,17 +112,17 @@ void add_flow(string hash, object flow) {
 
 static void new_cb(mixed hash) {
   if (_flow_new_cb)
-    _flow_new_cb(flows[hash]);
+    catch(_flow_new_cb(flows->get(hash)));
 }
 
 static void exp_cb(mixed hash) {
-  if (flows[hash]) {
+  if (flows->get(hash)) {
     if (_flow_exp_cb)
-      _flow_exp_cb(flows[hash]);
+      catch(_flow_exp_cb(flows->get(hash)));
     exp_count++;
     //write("removing flow %O\n", flows[hash]->english());
     destruct(flows[hash]);
-    m_delete(flows, hash);
+    flows->rm(hash);
   }
   if (exp_count > sizeof(flows) / 20) {
     // If we've expired > 5% of flows then manually run the GC
@@ -132,29 +133,17 @@ static void exp_cb(mixed hash) {
 
 static void log_cb(mixed hash) {
   if (_flow_log_cb)
-    _flow_log_cb(flows[hash]);
+    catch(_flow_log_cb(flows->get(hash)));
 }
 
 static void state_cb(mixed hash) {
   if (_flow_state_cb)
-    _flow_state_cb(flows[hash]);
+    catch(_flow_state_cb(flows->get(hash)));
 }
 
 
 mapping status() {
-  array f = values(flows);
-  sort(f->bytes, f);
-  reverse(f);
-  if (sizeof(flows))
-    return ([
-	"flowcount" : total_flows,
-	"bytes" : replace(String.int2size(total_bytes), "b", "B"),
-	"packets" : total_packets,
-	"dropped" : drop,
-	"flows" : f,
-	]);
-  else
-    return ([]);
+  return flows->status();
 }
 
 string hash(object ip, object p) {
@@ -227,7 +216,7 @@ object `flows() {
 
 object `flows=(object x) {
   LOCK;
-  return _flows;
+  return _flows = x;
 }
 
 int `max() {
@@ -320,8 +309,50 @@ int `total_flows=(int x) {
   return _total_flows = x;
 }
 
-mixed flow_set(string hash, mixed val) {
-  LOCK;
-  return flows[hash] = val;
-}
+class FlowContainer {
 
+  static mapping flows = ([]);
+  static object _mutex = Thread.Mutex();
+
+  mixed set(mixed idx, mixed val) {
+    LOCK;
+    flows[idx] = val;
+    return val;
+  }
+
+  mixed get(mixed idx) {
+    return flows[idx];
+  }
+
+  void rm(mixed idx) {
+    LOCK;
+    m_delete(flows, idx);
+  }
+
+  int _sizeof() {
+    return sizeof(flows);
+  }
+
+  array _values() {
+    return values(flows);
+  }
+
+  mapping status() {
+    LOCK;
+    if (sizeof(flows)) {
+      array f = values(flows);
+      sort(f->bytes, f);
+      reverse(f);
+      return ([
+	  "flowcount" : total_flows,
+	  "bytes" : replace(String.int2size(total_bytes), "b", "B"),
+	  "packets" : total_packets,
+	  "dropped" : drop,
+	  "flows" : f,
+	  ]);
+    }
+    else
+      return ([]);
+  }
+
+}

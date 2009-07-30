@@ -1,37 +1,48 @@
 #!/usr/bin/pike7.6 -Mlib/
 
-#define IF "eth0"
+#define IF "en0"
 #define MTU 68
 
 object fe;
 array threads;
 object cap;
 object queue;
+object logfile;
 
 int main() {
-  threads = ({});
-  threads += ({ Thread.thread_create(counterloop) });
-  queue = ADT.Queue();
+  //threads = ({});
+  //threads += ({ Thread.thread_create(counterloop) });
+  //queue = Thread.Queue();
+
+  logfile = Stdio.File("logfile", "cwa");
 
   fe = IP.Flow.Engine();
+  //fe->set_log_flow_cb(lambda(object flow) { logfile->write("%s\n", flow->english(1,1)); });
+  fe->set_log_flow_cb(lambda(object flow) { write("%s\n", flow->english()); });
+  fe->set_new_flow_cb(lambda(object flow) { IP.Flow.DNSCache->lookup_ip((string)flow->src); (string)IP.Flow.DNSCache->lookup_ip(flow->dst); } );
 
   cap = Public.Network.Pcap.Pcap();
-  cap->set_capture_length(MTU);
-  cap->set_promisc(1);
-  cap->open_live(IF);
-  threads += ({ Thread.thread_create(caploop) });
-  //for (int i; i<10; i++)
+  //threads += ({ Thread.thread_create(caploop) });
+  //for (int i; i<2; i++)
     //threads += ({ Thread.thread_create(queueloop) });
+  cap->open_live(IF);
+  cap->set_capture_length(MTU);
+  cap->set_capture_callback(capture_cb);
+  cap->set_promisc(1);
+  while(1)
+    cap->dispatch(50);
 
-  return -1;
+  return 1;
 }
 
 void caploop() {
   while(1) {
-    capture_cb(cap->next());
-    //mixed c = cap->next();
-    //if (c)
-      //queue->write(c);
+    //capture_cb(cap->next());
+    write("*");
+    //catch(cap->dispatch(50));
+    catch(mixed c = cap->next());
+    if (c)
+      queue->write(c);
   }
 }
 
@@ -52,26 +63,27 @@ void queueloop() {
 
 void write_counters(void|int sleep) {
   //write("%O\n", fe->status());
-  array flows = fe->status()->flows;
-  array bytes = copy_value(flows->bytes);
-  sort(bytes, flows);
-  flows = reverse(flows);
-  write("Total Flows: %d\tTotal Bytes: %s\tTotal Packets: %d\n", fe->status()->flowcount, fe->status()->bytes, fe->status()->packets);
-  int z = 10;
-  if (sizeof(flows) < 10)
-    z = sizeof(flows);
-  write("Top %d flows:\n", z);
-  for (int i; i < z; i++) {
-    object f = flows[i];
-    if (f)
-      write("%s\n", f->english(1,1));
+  mapping status = fe->status();
+  if (sizeof(status)) {
+    array flows = status->flows;
+    write("Total Flows: %d\tTotal Bytes: %s\tTotal Packets: %d\n", status->flowcount, status->bytes, status->packets);
+    int z = 10;
+    if (sizeof(flows) < 10)
+      z = sizeof(flows);
+    write("Top %d flows:\n", z);
+    for (int i; i < z; i++) {
+      object f = flows[i];
+      if (f)
+	write("%s\n", f->english(1,1));
+    }
+    write("\n");
   }
-  write("\n");
   if (sleep)
     call_out(write_counters, sleep);
 }
 
 void capture_cb(mixed ... args) {
+  write(".");
   object frame = Ethernet.Packet(args[0]->data);
   if (frame->type->name() == "IPv4") {
     object packet;
