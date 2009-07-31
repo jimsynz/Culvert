@@ -8,6 +8,7 @@ static int _max;
 static int _drop;
 static int _exp_count;
 static function __flow_new_cb, __flow_exp_cb, __flow_log_cb, __flow_state_cb;
+static void|array __flow_new_cb_data, __flow_exp_cb_data, __flow_log_cb_data, __flow_state_cb_data;
 static int _total_bytes;
 static int _total_packets;
 static int _total_flows;
@@ -43,20 +44,24 @@ void packet(object ip) {
   }
 }
 
-void set_new_flow_cb(function cb) {
+void set_new_flow_cb(function cb, mixed ... data) {
   _flow_new_cb = cb;
+  _flow_new_cb_data = data;
 }
 
-void set_expired_flow_cb(function cb) {
+void set_expired_flow_cb(function cb, mixed ... data) {
   _flow_exp_cb = cb;
+  _flow_exp_cb_data = data;
 }
 
-void set_log_flow_cb(function cb) {
+void set_log_flow_cb(function cb, mixed ... data) {
   _flow_log_cb = cb;
+  _flow_log_cb_data = data;
 }
 
-void set_flow_statechange_cb(function cb) {
+void set_flow_statechange_cb(function cb, mixed ... data) {
   _flow_state_cb = cb;
+  _flow_log_cb_data = data;
 }
 
 static void tcp(object ip) {
@@ -112,13 +117,13 @@ void add_flow(string hash, object flow) {
 
 static void new_cb(mixed hash) {
   if (_flow_new_cb)
-    catch(_flow_new_cb(flows->get(hash)));
+    catch(_flow_new_cb(flows->get(hash), @_flow_new_cb_data));
 }
 
 static void exp_cb(mixed hash) {
   if (flows->get(hash)) {
     if (_flow_exp_cb)
-      catch(_flow_exp_cb(flows->get(hash)));
+      catch(_flow_exp_cb(flows->get(hash), @_flow_exp_cb_data));
     exp_count++;
     //write("removing flow %O\n", flows[hash]->english());
     destruct(flows[hash]);
@@ -133,12 +138,12 @@ static void exp_cb(mixed hash) {
 
 static void log_cb(mixed hash) {
   if (_flow_log_cb)
-    catch(_flow_log_cb(flows->get(hash)));
+    catch(_flow_log_cb(flows->get(hash), @_flow_log_cb_data));
 }
 
 static void state_cb(mixed hash) {
   if (_flow_state_cb)
-    catch(_flow_state_cb(flows->get(hash)));
+    catch(_flow_state_cb(flows->get(hash), @_flow_state_cb_data));
 }
 
 
@@ -255,6 +260,14 @@ static function `_flow_new_cb=(function x) {
   return __flow_new_cb = x;
 }
 
+static void|array `_flow_new_cb_data() {
+  return __flow_new_cb_data;
+}
+
+static void|array `_flow_new_cb_data=(void|array x) {
+  return __flow_new_cb_data = x;
+}
+
 static function `_flow_exp_cb() {
   return __flow_exp_cb;
 }
@@ -262,6 +275,14 @@ static function `_flow_exp_cb() {
 static function `_flow_exp_cb=(function x) {
   LOCK;
   return __flow_exp_cb = x;
+}
+
+static void|array `_flow_exp_cb_data() {
+  return __flow_exp_cb_data;
+}
+
+static void|array `_flow_exp_cb_data=(void|array x) {
+  return __flow_exp_cb_data = x;
 }
 
 static function `_flow_log_cb() {
@@ -273,6 +294,14 @@ static function `_flow_log_cb=(function x) {
   return __flow_log_cb = x;
 }
 
+static void|array `_flow_log_cb_data() {
+  return __flow_log_cb_data;
+}
+
+static void|array `_flow_log_cb_data=(void|array x) {
+  return __flow_log_cb_data = x;
+}
+
 static function `_flow_state_cb() {
   return __flow_state_cb;
 }
@@ -280,6 +309,14 @@ static function `_flow_state_cb() {
 static function `_flow_state_cb=(function x) {
   LOCK;
   return __flow_state_cb = x;
+}
+
+static void|array `_flow_state_cb_data() {
+  return __flow_state_cb_data;
+}
+
+static void|array `_flow_state_cb_data=(void|array x) {
+  return __flow_state_cb_data = x;
 }
 
 int `total_bytes() {
