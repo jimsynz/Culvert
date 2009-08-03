@@ -35,3 +35,7 @@ string dst_mac() {
   }
 }
 
+
+static string _sprintf() {
+  return sprintf("Ethernet.Frame(/* %s -> %s */)", src_mac(), dst_mac());
+}

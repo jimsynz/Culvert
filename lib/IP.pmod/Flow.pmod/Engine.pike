@@ -61,7 +61,7 @@ void set_log_flow_cb(function cb, mixed ... data) {
 
 void set_flow_statechange_cb(function cb, mixed ... data) {
   _flow_state_cb = cb;
-  _flow_log_cb_data = data;
+  _flow_state_cb_data = data;
 }
 
 static void tcp(object ip) {
@@ -131,8 +131,11 @@ static void exp_cb(mixed hash) {
   }
   if (exp_count > sizeof(flows) / 20) {
     // If we've expired > 5% of flows then manually run the GC
-    call_out(gc, 0);
-    exp_count = 0;
+#ifdef ENABLE_THREADS
+    Thread.thread_create(lambda() { gc(); exp_count = 0; });
+#else
+    call_out(lambda() { gc(); exp_count = 0; }, 0);
+#endif
   }
 }
 

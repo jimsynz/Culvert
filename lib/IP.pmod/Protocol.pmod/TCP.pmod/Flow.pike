@@ -29,10 +29,22 @@ void tcp_state(object tcp) {
   else if (tcp->flags["RST"] &&
       tcp->flags["ACK"]) {
     set_state(CLOSE);
-    if (timeout_co)
+    if (timeout_co) {
+#ifdef ENABLE_THREADS
+      timeout_co->kill();
+      timeout_co = 0;
+#else
       remove_call_out(timeout_co);
-    if (log_co)
+#endif
+    }
+    if (log_co) {
+#ifdef ENABLE_THREADS
+      log_co->kill();
+      log_co = 0;
+#else
       remove_call_out(log_co);
+#endif
+    }
     if (_exp_cb)
       _exp_cb(_hash);
   }
@@ -58,12 +70,12 @@ void next(object ip, object tcp) {
       // We're the first packet!
       src_port = tcp->src_port;
       dst_port = tcp->dst_port;
-      conversation += ({ ([ "time" : now(), "direction" : "out", "packet" : tcp ]) });
+      conversation = ({ ([ "time" : now(), "direction" : "out", "packet" : tcp ]) });
       tcp_state(tcp);
     }
     else if (state) {
-      if ((src_port = tcp->src_port) &&
-	  (dst_port = tcp->dst_port)) {
+      if ((src == tcp->src) &&
+	  (dst == tcp->dst)) {
 	conversation += ({ ([ "time" : now(), "direction" : "out", "packet" : tcp ]) });
       }
       else {

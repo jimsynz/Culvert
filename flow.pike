@@ -21,7 +21,6 @@ constant options =
 
 
 int main(int argc, array argv) {
-  object queue = Thread.Fifo(2000);
 
   mapping args = (mapping)Getopt.find_all_options(argv, options, 0);
   if (args->help) {
@@ -41,12 +40,18 @@ int main(int argc, array argv) {
   if (args->topten)
     args->topten = (int)args->topten;
 
+  //object queue = Thread.Fifo(2000);
+  object queue = Thread.Fifo(threads||args->threads);
+  //object queue = Thread.Queue();
+
+
   object fe = IP.Flow.Engine();
   //if (!args->nodns) 
     //fe->set_new_flow_cb(precache_dns, queue);
   if (args->logfile) {
     object logfile = Stdio.File(args->logfile, "cwa");
     fe->set_expired_flow_cb(log, queue, logfile, !args->nodns);
+    fe->set_flow_statechange_cb(lambda(mixed f) { write("%s\n", f->english(!args->nodns,1)); } );
   }
 
   object cap = Public.Network.Pcap.Pcap();
@@ -64,7 +69,7 @@ int main(int argc, array argv) {
   cap->set_promisc(1);
   int start_threads = args->threads||threads;
   if (start_threads) {
-    for (int i; i < start_threads; i++) {
+    for (int i=0; i < start_threads; i++) {
       Thread.thread_create(dequeue, queue);
     }
     Thread.thread_create(dispatch, cap, queue, fe);
@@ -77,7 +82,7 @@ int main(int argc, array argv) {
 
   if (args->topten && start_threads)
     Thread.thread_create(do_top_ten, fe, !args->nodns, args->topten);
-  else
+  else if (args->topten)
     call_out(top_ten, args->topten, fe, !args->nodns, args->topten);
 
   return -1;
@@ -95,7 +100,7 @@ void dispatch(object cap, object queue, object fe) {
 
 void dequeue(object queue) {
   while(1) {
-    array c = queue->read();
+    mixed c = queue->read();
     if (sizeof(c) > 1)
       c[0](@c[1..]);
     else
@@ -115,7 +120,7 @@ void precache_dns(object flow, object queue) {
 
 void log(object flow, object queue, object logfile, int dns) {
 #ifdef ENABLE_THREADS
-  queue->write(({ lambda() { logfile->write("%s\n", flow->english(dns, 1)); } }));
+  queue->write(({ lambda() { catch(logfile->write("%s\n", flow->english(dns, 1))); } }));
 #else
   catch(logfile->write("%s\n", flow->english(dns, 1)));
 #endif

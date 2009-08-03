@@ -12,7 +12,7 @@ static object _src;
 static object _dst;
 static int _bytes;
 static int _packets;
-static array _conversation;
+static array _conversation = ({});
 static int _state;
 static string _payload;
 static object _protocol;
@@ -39,8 +39,7 @@ void create(object ip, object layer3) {
   src = ip->src;
   dst = ip->dst;
   protocol = ip->protocol||ip->next_header;
-  // conversation = Locking.Array();
-  conversation = ({});
+  //conversation = ({});
   payload = "";
   start_time = time();
   time_offset = time(start_time);
@@ -60,12 +59,21 @@ mixed hash(void|mixed __hash) {
 void log_cb(function cb) {
   if (functionp(cb))
     _log_cb = cb;
-    if (_hash)
-      log_co = call_out(do_log, LOG_TICK);
+#ifdef ENABLE_THREADS
+  if (_hash)
+    log_co = Thread.thread_create(lambda() { sleep(LOG_TICK); do_log()); });
+  else {
+    log_co->kill();
+    log_co = 0;
+  }
+#else
+  if (_hash)
+    log_co = call_out(do_log, LOG_TICK);
   else {
     remove_call_out(log_co);
     log_co = 0;
   }
+#endif
 }
 
 void expire_cb(function cb) {
@@ -80,14 +88,23 @@ void state_cb(function cb) {
 
 static void do_log() {
   _log_cb(_hash);
+#ifdef ENABLE_THREADS
+  log_co = Thread.thread_create(lambda() { sleep(LOG_TICK); do_log(); } );
+#else
   log_co = call_out(do_log, LOG_TICK);
+#endif
 }
 
 void set_timeout() {
-  if (timeout_co) {
+#ifdef ENABLE_THREADS
+  if (timeout_co)
+    timeout_co->kill();
+  timeout_co = Thread.create_thread(lambda() { sleep(EXP_TIMEOUT); timeout(); });
+#else 
+  if (timeout_co)
     remove_call_out(timeout_co);
-  }
   timeout_co = call_out(timeout, EXP_TIMEOUT);
+#endif
 }
 
 void timeout() {
@@ -101,13 +118,11 @@ void timeout() {
   }
 }
 
-void set_state(int _state) {
-  if (state != _state) {
-    state = _state;
+void set_state(int __state) {
+  if (state != __state) {
+    state = __state;
     if (functionp(_state_cb))
       _state_cb(_hash);
-    else
-      call_out(_state_cb, 0, _hash);
   }
 }
 
@@ -337,152 +352,4 @@ static mixed `log_co() {
 static mixed `log_co=(mixed x) {
   LOCK;
   return _log_co = x;
-}
-
-class LockingArray {
-
-  static array _store = ({});
-  static object _mutex = Thread.Mutex();
-
-  mixed `!(mixed ... args) {
-    LOCK;
-    return _store->`!(args);
-  }
-  mixed `!=(mixed ... args) {
-    LOCK;
-    return _store->`!=(@args);
-  }
-  mixed `%(mixed ... args) {
-    LOCK;
-    return _store->`%(@args);
-  }
-  mixed `&(mixed ...args) {
-    LOCK;
-    return _store->`&(@args);
-  }
-  mixed `()(mixed ... args) {
-    LOCK;
-    return _store->`()(@args);
-  }
-  mixed call_function(mixed ... args) {
-    LOCK;
-    return _store->call_function(@args);
-  }
-  mixed `*(mixed ... args) {
-    LOCK;
-    return _store->`*(@args);
-  }
-  mixed `+(mixed ... args) {
-    LOCK;
-    return _store->`+(@args);
-  }
-  mixed `-(mixed ... args) {
-    LOCK;
-    return _store->`-(@args);
-  }
-  mixed `->(mixed ... args) {
-    LOCK;
-    return _store->`->(@args);
-  }
-  mixed `->=(mixed ... args) {
-    LOCK;
-    return _store->`->=(@args);
-  }
-  mixed `/(mixed ... args) {
-    LOCK;
-    return _store->`/(@args);
-  }
-  mixed `<(mixed ... args) {
-    LOCK;
-    return _store->`<(@args);
-  }
-  mixed `<<(mixed ... args) {
-    LOCK;
-    return _store->`<<(@args);
-  }
-  mixed `<=(mixed ... args) {
-    LOCK;
-    return _store->`<=(@args);
-  }
-  mixed `==(mixed ... args) {
-    LOCK;
-    return _store->`==(@args);
-  }
-  mixed `>(mixed ... args) {
-    LOCK;
-    return _store->`>(@args);
-  }
-  mixed `>=(mixed ... args) {
-    LOCK;
-    return _store->`>=(@args);
-  }
-  mixed `>>(mixed ... args) {
-    LOCK;
-    return _store->`>>(@args);
-  }
-  mixed `[..](mixed ... args) {
-    LOCK;
-    return _store->`[..](@args);
-  }
-  mixed `[](mixed ... args) {
-    LOCK;
-    return _store->`[](@args);
-  }
-  mixed `[]=(mixed ... args) {
-    LOCK;
-    return _store->`[]=(@args);
-  }
-  mixed `^(mixed ... args) {
-    LOCK;
-    return _store->`^(@args);
-  }
-  mixed `|(mixed ... args) {
-    LOCK;
-    return _store->`|(@args);
-  }
-  mixed `~(mixed ... args) {
-    LOCK;
-    return _store->`~(@args);
-  }
-  mixed _values(mixed ... args) {
-    LOCK;
-    return _store->_values(@args);
-  }
-  mixed _sizeof(mixed ... args) {
-    LOCK;
-    return _store->_sizeof(@args);
-  }
-  mixed _indices(mixed ... args) {
-    LOCK;
-    return _store->_indices(@args);
-  }
-  mixed __hash(mixed ... args) {
-    LOCK;
-    return _store->__hash(@args);
-  }
-  mixed `_equal(mixed ... args) {
-    LOCK;
-    return _store->_equal(@args);
-  }
-  mixed `_is_type(mixed ... args) {
-    LOCK;
-    return _store->`_is_type(@args);
-  }
-  mixed `_sprintf(mixed ... args) {
-    LOCK;
-    return _store->`_sprintf(@args);
-  }
-  mixed `_m_delete(mixed ... args) {
-    LOCK;
-    return _store->`_m_delete(@args);
-  }
-  mixed `_get_iterator(mixed ... args) {
-    LOCK;
-    return _store->`_get_iterator(@args);
-  }
-  mixed `_search(mixed ... args) {
-    LOCK;
-    return _store->`_search(@args);
-  }
-
 }
