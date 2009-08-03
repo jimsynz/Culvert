@@ -51,7 +51,7 @@ int main(int argc, array argv) {
   if (args->logfile) {
     object logfile = Stdio.File(args->logfile, "cwa");
     fe->set_expired_flow_cb(log, queue, logfile, !args->nodns);
-    fe->set_flow_statechange_cb(lambda(mixed f) { write("%s\n", f->english(!args->nodns,1)); } );
+    //fe->set_flow_statechange_cb(lambda(mixed f) { write("%s\n", f->english(!args->nodns,1)); } );
   }
 
   object cap = Public.Network.Pcap.Pcap();
