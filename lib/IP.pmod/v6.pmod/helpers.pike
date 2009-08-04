@@ -15,7 +15,7 @@
  *
  * The Initial Developer of the Original Code is
  * James Harton, <james@mashd.cc>.
- * Portions created by the Initial Developer are Copyright (C) 2005
+ * Portions created by the Initial Developer are Copyright (C) 2005-2009
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
