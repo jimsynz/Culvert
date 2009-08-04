@@ -34,7 +34,7 @@ static void start() {
 }
 
 static void expire() {
-  write("DNS cache size: %d\n", sizeof(dns_cache));
+  //write("DNS cache size: %d\n", sizeof(dns_cache));
   int old = time() - TTL;
   foreach(indices(dns_cache), string ip) {
     if (dns_cache[ip]->t < old) {

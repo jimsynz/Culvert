@@ -44,24 +44,28 @@ void packet(object ip) {
   }
 }
 
-void set_new_flow_cb(function cb, mixed ... data) {
+void set_new_flow_cb(function cb, void|mixed ... data) {
   _flow_new_cb = cb;
-  _flow_new_cb_data = data;
+  if (data)
+    _flow_new_cb_data = data;
 }
 
-void set_expired_flow_cb(function cb, mixed ... data) {
+void set_expired_flow_cb(function cb, void|mixed ... data) {
   _flow_exp_cb = cb;
-  _flow_exp_cb_data = data;
+  if (data)
+    _flow_exp_cb_data = data;
 }
 
-void set_log_flow_cb(function cb, mixed ... data) {
+void set_log_flow_cb(function cb, void|mixed ... data) {
   _flow_log_cb = cb;
-  _flow_log_cb_data = data;
+  if (data)
+    _flow_log_cb_data = data;
 }
 
-void set_flow_statechange_cb(function cb, mixed ... data) {
+void set_flow_statechange_cb(function cb, void|mixed ... data) {
   _flow_state_cb = cb;
-  _flow_state_cb_data = data;
+  if (data)
+    _flow_state_cb_data = data;
 }
 
 static void tcp(object ip) {
@@ -70,12 +74,12 @@ static void tcp(object ip) {
   if (flows->get(_hash))
     flows->get(_hash)->next(ip, tcp);
   else {
-    object flow = IP.Protocol.TCP.Flow(ip, tcp);
+    object flow = IP.Protocol.TCP.Flow(ip, tcp, _hash, exp_cb, state_cb, log_cb);
     add_flow(_hash, flow);
-    flow->hash(_hash);
-    flow->expire_cb(exp_cb);
-    flow->state_cb(state_cb);
-    flow->log_cb(log_cb);
+    //flow->hash(_hash);
+    //flow->expire_cb(exp_cb);
+    //flow->state_cb(state_cb);
+    //flow->log_cb(log_cb);
   }
 }
 
@@ -85,12 +89,12 @@ static void udp(object ip) {
   if (flows->get(_hash))
     flows->get(_hash)->next(ip, udp);
   else {
-    object flow = IP.Protocol.UDP.Flow(ip, udp);
+    object flow = IP.Protocol.UDP.Flow(ip, udp, _hash, exp_cb, state_cb, log_cb);
     add_flow(_hash, flow);
-    flow->hash(_hash);
-    flow->expire_cb(exp_cb);
-    flow->state_cb(state_cb);
-    flow->log_cb(log_cb);
+    //flow->hash(_hash);
+    //flow->expire_cb(exp_cb);
+    //flow->state_cb(state_cb);
+    //flow->log_cb(log_cb);
   }
 }
 
@@ -125,17 +129,13 @@ static void exp_cb(mixed hash) {
     if (_flow_exp_cb)
       catch(_flow_exp_cb(flows->get(hash), @_flow_exp_cb_data));
     exp_count++;
-    //write("removing flow %O\n", flows[hash]->english());
     destruct(flows[hash]);
     flows->rm(hash);
   }
   if (exp_count > sizeof(flows) / 20) {
     // If we've expired > 5% of flows then manually run the GC
-#ifdef ENABLE_THREADS
-    Thread.thread_create(lambda() { gc(); exp_count = 0; });
-#else
-    call_out(lambda() { gc(); exp_count = 0; }, 0);
-#endif
+    gc();
+    exp_count = 0;
   }
 }
 
@@ -144,9 +144,9 @@ static void log_cb(mixed hash) {
     catch(_flow_log_cb(flows->get(hash), @_flow_log_cb_data));
 }
 
-static void state_cb(mixed hash) {
+static void state_cb(mixed hash, int oldstate, int newstate) {
   if (_flow_state_cb)
-    catch(_flow_state_cb(flows->get(hash), @_flow_state_cb_data));
+    catch(_flow_state_cb(flows->get(hash), oldstate, newstate, @_flow_state_cb_data));
 }
 
 

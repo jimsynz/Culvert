@@ -10,10 +10,10 @@ constant SYN_SENT = 10;
 constant SYN_RECV = 11;
 constant CLOSE_WAIT = 12;
 
-void create(object ip, object tcp) {
+void create(object ip, object tcp, mixed ... args) {
   src_port = tcp->src_port;
   dst_port = tcp->dst_port;
-  ::create(ip, tcp);
+  ::create(ip, tcp, @args);
 }
 
 void tcp_state(object tcp) {

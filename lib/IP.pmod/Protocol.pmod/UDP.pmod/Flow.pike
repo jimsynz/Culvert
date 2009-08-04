@@ -6,10 +6,10 @@ static object _mutex = Thread.Mutex();
 static int _src_port;
 static int _dst_port;
 
-void create(object ip, object udp) {
+void create(object ip, object udp, mixed ... args) {
   src_port = udp->src_port;
   dst_port = udp->dst_port;
-  ::create(ip, udp);
+  ::create(ip, udp, @args);
 }
 
 void next(object ip, object udp) {

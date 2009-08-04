@@ -35,7 +35,7 @@ constant CLOSING = 3;
 constant CLOSE = 4;
 constant UNKNOWN = 5;
 
-void create(object ip, object layer3) {
+void create(object ip, object layer3, void|mixed _hash, void|function exp, void|function state, void|function log) {
   src = ip->src;
   dst = ip->dst;
   protocol = ip->protocol||ip->next_header;
@@ -43,6 +43,14 @@ void create(object ip, object layer3) {
   payload = "";
   start_time = time();
   time_offset = time(start_time);
+  if (_hash)
+    hash(_hash);
+  if (functionp(exp))
+    expire_cb(exp);
+  if (functionp(state))
+    state_cb(state);
+  if (functionp(log))
+    log_cb(log);
   next(ip, layer3);
 }
 
@@ -120,9 +128,10 @@ void timeout() {
 
 void set_state(int __state) {
   if (state != __state) {
+    int oldstate = state;
     state = __state;
     if (functionp(_state_cb))
-      _state_cb(_hash);
+      _state_cb(_hash, oldstate, __state);
   }
 }
 
@@ -200,17 +209,48 @@ string english(void|int dns, void|int scope) {
 
 
   string first = (Calendar.Second(start_time)->format_time() / " ")[1];
-  float _last = conversation[-1]->time;
-  string last = _last>0?sprintf("%:2fs", _last):"-.--s";
-  string brate = replace(String.int2size((int)(bytes * 8/ _last)) + "ps", "bytes", "b");
-  string prate = replace(String.int2size((int)(packets / _last)) + "ps", ({ "bytes", "b" }), ({ "p", "p" }));
+  string last = flowtime>0.0?sprintf("%:2fs", flowtime):"-.--s";
+  string rates;
+  if (packets > 1) {
+    string brate = replace(String.int2size((int)bps) + "ps", "B", "b");
+    brate = replace(brate, "bytes", "b");
+    string prate = replace(String.int2size((int)pps) + "ps", "B", "b");
+    prate = replace(prate, "bytes", "p");
+    prate = replace(prate, "byte", "p");
+    prate = replace(prate, "b", "p");
+    rates = sprintf("%s %s, %d packets %s", replace(String.int2size(bytes), "b", "B"), brate, packets, prate);
+  }
+  else 
+    rates = sprintf("%s, 1 packet", replace(String.int2size(bytes), "b", "B"));
 
-  return sprintf("%s %6s %s %s%s %s %s%s (%s %s, %d packets %s) %s", first, last, protocol->name(), _src, _src_scope, dir||"", _dst, _dst_scope, replace(String.int2size(bytes), "b", "B"), brate, packets, prate, state);
+  return sprintf("%s %6s %s %s%s %s %s%s (%s) %s", first, last, protocol->name(), _src, _src_scope, dir||"", _dst, _dst_scope, rates, state);
 }
 
 //string _sprintf() {
   //return sprintf("Protocol.IP.Protocol.%s.Flow(/* %s */)", protocol->name(), english());
 //}
+
+//! BITS per second.
+float `bps() {
+  if (sizeof(conversation) > 1)
+    return bytes * 8 / flowtime;
+  else 
+    return 0.0;
+}
+
+float `pps() {
+  if (sizeof(conversation) > 1)
+    return packets / flowtime;
+  else
+    return 0.0;
+}
+
+float `flowtime() {
+  if (sizeof(conversation) > 1)
+    return abs(conversation[-1]->time - time_offset);
+  else
+    return 0.0;
+}
 
 object `src() {
   return _src;
