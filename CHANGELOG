@@ -1,5 +1,9 @@
 Culvert changelog.
 
+2009/08/05:
+  - Removed set_state() method from Flow.Flow(), just use the setter
+    instead.
+
 2009/08/04:
   - Name changed to Culvert because I like it more.
     Stability fixes and threading improvements.

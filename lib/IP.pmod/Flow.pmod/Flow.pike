@@ -141,21 +141,12 @@ void set_timeout() {
 
 void timeout() {
   if (state == CLOSING) {
-    set_state(CLOSE);
+    state = CLOSE;
     _exp_cb(_hash);
   }
   else {
-    set_state(CLOSING);
+    state = CLOSING;
     set_timeout();
-  }
-}
-
-void set_state(int __state) {
-  if (state != __state) {
-    int oldstate = state;
-    state = __state;
-    if (functionp(_state_cb))
-      _state_cb(_hash, oldstate, __state);
   }
 }
 
@@ -324,8 +315,17 @@ int `state() {
 }
 
 int `state=(int x) {
-  LOCK;
-  return _state = x;
+  if (_state != x) {
+    int oldstate = _state;
+    LOCK;
+    _state = x;
+    UNLOCK;
+    if (functionp(_state_cb))
+      _state_cb(_hash, oldstate, _state);
+    return _state;
+  }
+  else 
+    return x;
 }
 
 string `payload() {

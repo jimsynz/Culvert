@@ -77,7 +77,7 @@ int main(int argc, array argv) {
     object logfile = Stdio.File(args->logfile, "cwa");
     fe->set_expired_flow_cb(log, queue, logfile, !args->nodns);
   }
-  //fe->set_flow_statechange_cb(lambda(mixed f, int o, int n) { write("%d:%d %s\n", o, n, f->english(!args->nodns,1)); } );
+  fe->set_flow_statechange_cb(lambda(mixed f, int o, int n) { write("%d:%d %s\n", o, n, f->english(!args->nodns,1)); } );
 
   object cap = Public.Network.Pcap.Pcap();
   cap->set_capture_length(args->snaplen||snaplen);

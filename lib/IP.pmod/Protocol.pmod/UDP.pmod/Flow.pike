@@ -51,7 +51,7 @@ void next(object ip, object udp) {
       // We're the first packet!
       src_port = udp->src_port;
       dst_port = udp->dst_port;
-      set_state(ONEWAY);
+      state = ONEWAY;
       conversation += ({ ([ "time" : now(), "direction" : "out", "packet" : udp ]) });
     }
     else if (state) {
@@ -59,11 +59,11 @@ void next(object ip, object udp) {
 	  (dst_port = udp->dst_port)) {
 	// We're unidirectional, so far at least.
 	if (state != ESTABLISHED)
-	  set_state(ONEWAY);
+	  state = ONEWAY;
 	conversation += ({ ([ "time" : now(), "direction" : "out", "packet" : udp ]) });
       }
       else {
-	set_state(ESTABLISHED);
+	state = ESTABLISHED;
 	conversation += ({ ([ "time" : now(), "direction" : "in", "packet" : udp ]) });
       }
     }

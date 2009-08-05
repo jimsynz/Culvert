@@ -43,16 +43,16 @@ void create(object ip, object tcp, mixed ... args) {
 void tcp_state(object tcp) {
   if (tcp->flags["SYN"] &
       !tcp->flags["ACK"])
-    set_state(SYN_SENT);
+    state = SYN_SENT;
   else if (tcp->flags["SYN"] &&
       tcp->flags["ACK"])
-    set_state(SYN_RECV);
-  else if (tcp->flags["RST"] &&
-      !tcp->flags["ACK"])
-    set_state(CLOSE_WAIT);
-  else if (tcp->flags["RST"] &&
-      tcp->flags["ACK"]) {
-    set_state(CLOSE);
+    state = SYN_RECV;
+  else if ((tcp->flags["RST"] && !tcp->flags["ACK"]) ||
+      (tcp->flags["FIN"] && !tcp->flags["ACK"]))
+    state = CLOSE_WAIT;
+  else if ((tcp->flags["RST"] && tcp->flags["ACK"]) || 
+      (tcp->flags["FIN"] && tcp->flags["ACK"])) {
+    state = CLOSE;
     if (timeout_co) {
 #ifdef ENABLE_THREADS
       timeout_co->kill();
@@ -73,10 +73,10 @@ void tcp_state(object tcp) {
       _exp_cb(_hash);
   }
   else if (tcp->flags["ACK"] &&
-      !tcp->flags["SYN"])
-    set_state(ESTABLISHED);
-  else
-    set_state(UNKNOWN);
+      !tcp->flags["SYN"] && (state != CLOSE))
+    state = ESTABLISHED;
+  else if (state != CLOSE)
+    state = UNKNOWN;
 }
 
 void next(object ip, object tcp) {
