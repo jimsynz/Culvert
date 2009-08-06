@@ -81,15 +81,12 @@ void set_expired_flow_cb(function cb, void|mixed ... data) {
 }
 
 void set_log_flow_cb(function cb, void|mixed ... data) {
-  write("set_log_flow_cb(%{%O, %})\n", ({ cb }) + data);
   _flow_log_cb = cb;
   if (data)
     _flow_log_cb_data = data;
 #ifdef ENABLE_THREADS
-  write("foo\n");
-  Thread.thread_create(lambda() { write("Starting log thread.\n"); while(1) { sleep(LOG_TICK); log_cb(); } });
+  Thread.thread_create(lambda() { while(1) { sleep(LOG_TICK); log_cb(); } });
 #else
-  write("bar\n");
   call_out(lambda() { log_cb(); call_out(this_function(), 30); }, 30);
 #endif
 }
