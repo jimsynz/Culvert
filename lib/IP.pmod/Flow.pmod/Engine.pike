@@ -87,7 +87,7 @@ void set_log_flow_cb(function cb, void|mixed ... data) {
 #ifdef ENABLE_THREADS
   Thread.thread_create(lambda() { while(1) { sleep(LOG_TICK); log_cb(); } });
 #else
-  call_out(lambda() { log_cb(); call_out(this_function(), 30); }, 30);
+  call_out(lambda() { log_cb(); call_out(this_function, 30); }, 30);
 #endif
 }
 
