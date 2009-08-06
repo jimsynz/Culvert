@@ -1,5 +1,8 @@
 Culvert changelog.
 
+2009/08/06:
+  - Fixed up some threadding issues including an accidental deadlock.
+
 2009/08/05:
   - Removed set_state() method from Flow.Flow(), just use the setter
     instead.

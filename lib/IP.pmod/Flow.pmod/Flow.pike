@@ -43,15 +43,12 @@ static object _protocol;
 static int _start_time;
 static float _time_offset;
 
-static function __log_cb;
 static function __exp_cb;
 static function __state_cb;
 static mixed __hash;
 static mixed _timeout_co;
-static mixed _log_co;
 
 #define EXP_TIMEOUT 120
-#define LOG_TICK 30
 
 constant ONEWAY = 1;
 constant ESTABLISHED = 2;
@@ -59,7 +56,7 @@ constant CLOSING = 3;
 constant CLOSE = 4;
 constant UNKNOWN = 5;
 
-void create(object ip, object layer3, void|mixed _hash, void|function exp, void|function state, void|function log) {
+void create(object ip, object layer3, void|mixed _hash, void|function exp, void|function state) {
   src = ip->src;
   dst = ip->dst;
   protocol = ip->protocol||ip->next_header;
@@ -73,8 +70,6 @@ void create(object ip, object layer3, void|mixed _hash, void|function exp, void|
     expire_cb(exp);
   if (functionp(state))
     state_cb(state);
-  if (functionp(log))
-    log_cb(log);
   next(ip, layer3);
 }
 
@@ -88,26 +83,6 @@ mixed hash(void|mixed __hash) {
   return _hash;
 }
 
-void log_cb(function cb) {
-  if (functionp(cb))
-    _log_cb = cb;
-#ifdef ENABLE_THREADS
-  if (_hash)
-    log_co = Thread.thread_create(lambda() { sleep(LOG_TICK); do_log()); });
-  else {
-    log_co->kill();
-    log_co = 0;
-  }
-#else
-  if (_hash)
-    log_co = call_out(do_log, LOG_TICK);
-  else {
-    remove_call_out(log_co);
-    log_co = 0;
-  }
-#endif
-}
-
 void expire_cb(function cb) {
   if (functionp(cb))
     _exp_cb = cb;
@@ -118,20 +93,11 @@ void state_cb(function cb) {
     _state_cb = cb;
 }
 
-static void do_log() {
-  _log_cb(_hash);
-#ifdef ENABLE_THREADS
-  log_co = Thread.thread_create(lambda() { sleep(LOG_TICK); do_log(); } );
-#else
-  log_co = call_out(do_log, LOG_TICK);
-#endif
-}
-
 void set_timeout() {
 #ifdef ENABLE_THREADS
   if (timeout_co)
     timeout_co->kill();
-  timeout_co = Thread.create_thread(lambda() { sleep(EXP_TIMEOUT); timeout(); });
+  timeout_co = Thread.thread_create(lambda() { sleep(EXP_TIMEOUT); timeout(); });
 #else 
   if (timeout_co)
     remove_call_out(timeout_co);
@@ -364,15 +330,6 @@ float `time_offset=(float x) {
   return _time_offset = x;
 }
 
-static function `_log_cb() {
-  return __log_cb;
-}
-
-static function `_log_cb=(function x) {
-  LOCK;
-  return __log_cb = x;
-}
-
 static function `_exp_cb() {
   return __exp_cb;
 }
@@ -407,13 +364,4 @@ static mixed `timeout_co() {
 static mixed `timeout_co=(mixed x) {
   LOCK;
   return _timeout_co = x;
-}
-
-static mixed `log_co() {
-  return _log_co;
-}
-
-static mixed `log_co=(mixed x) {
-  LOCK;
-  return _log_co = x;
 }

@@ -26,6 +26,8 @@ static object _mutex = Thread.Mutex();
 #define LOCK object __key = _mutex->lock(1)
 #define UNLOCK destruct(__key)
 
+#define LOG_TICK 30
+
 static object _flows;
 static int _max;
 static int _drop;
@@ -79,9 +81,17 @@ void set_expired_flow_cb(function cb, void|mixed ... data) {
 }
 
 void set_log_flow_cb(function cb, void|mixed ... data) {
+  write("set_log_flow_cb(%{%O, %})\n", ({ cb }) + data);
   _flow_log_cb = cb;
   if (data)
     _flow_log_cb_data = data;
+#ifdef ENABLE_THREADS
+  write("foo\n");
+  Thread.thread_create(lambda() { write("Starting log thread.\n"); while(1) { sleep(LOG_TICK); log_cb(); } });
+#else
+  write("bar\n");
+  call_out(lambda() { log_cb(); call_out(this_function(), 30); }, 30);
+#endif
 }
 
 void set_flow_statechange_cb(function cb, void|mixed ... data) {
@@ -96,12 +106,11 @@ static void tcp(object ip) {
   if (flows->get(_hash))
     flows->get(_hash)->next(ip, tcp);
   else {
-    object flow = IP.Protocol.TCP.Flow(ip, tcp, _hash, exp_cb, state_cb, log_cb);
+    object flow = IP.Protocol.TCP.Flow(ip, tcp, _hash, exp_cb, state_cb);
     add_flow(_hash, flow);
     //flow->hash(_hash);
     //flow->expire_cb(exp_cb);
     //flow->state_cb(state_cb);
-    //flow->log_cb(log_cb);
   }
 }
 
@@ -111,12 +120,11 @@ static void udp(object ip) {
   if (flows->get(_hash))
     flows->get(_hash)->next(ip, udp);
   else {
-    object flow = IP.Protocol.UDP.Flow(ip, udp, _hash, exp_cb, state_cb, log_cb);
+    object flow = IP.Protocol.UDP.Flow(ip, udp, _hash, exp_cb, state_cb);
     add_flow(_hash, flow);
     //flow->hash(_hash);
     //flow->expire_cb(exp_cb);
     //flow->state_cb(state_cb);
-    //flow->log_cb(log_cb);
   }
 }
 
@@ -161,9 +169,9 @@ static void exp_cb(mixed hash) {
   }
 }
 
-static void log_cb(mixed hash) {
+static void log_cb() {
   if (_flow_log_cb)
-    catch(_flow_log_cb(flows->get(hash), @_flow_log_cb_data));
+    catch(_flow_log_cb(@_flow_log_cb_data));
 }
 
 static void state_cb(mixed hash, int oldstate, int newstate) {
@@ -371,14 +379,26 @@ int `total_flows=(int x) {
   return _total_flows = x;
 }
 
+int `current_flows() {
+  return sizeof(flows);
+}
+
+int `max_flows() {
+  return flows->max;
+}
+
 class FlowContainer {
 
   static mapping flows = ([]);
   static object _mutex = Thread.Mutex();
+  static int _max;
 
   mixed set(mixed idx, mixed val) {
     LOCK;
     flows[idx] = val;
+    UNLOCK;
+    if (sizeof(flows) > max)
+      max = sizeof(flows);
     return val;
   }
 
@@ -415,6 +435,15 @@ class FlowContainer {
     }
     else
       return ([]);
+  }
+
+  int `max() {
+    return _max;
+  }
+
+  int `max=(int x) {
+    LOCK;
+    return _max = x;
   }
 
 }

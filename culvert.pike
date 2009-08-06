@@ -25,6 +25,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 #ifdef DISABLE_THREADS
+#undef ENABLE_THREADS
 constant threads = 0;
 #else
 #define ENABLE_THREADS
@@ -70,7 +71,12 @@ int main(int argc, array argv) {
 
 
   object fe = IP.Flow.Engine();
+  int start_threads = args->threads||threads;
+#ifdef ENABLE_THREADS
+  write("Culvert %d.%d-%s started with %d worker threads.\n\n", Culvert.MAJOR, Culvert.MINOR, Culvert.BRANCH, start_threads);
+#else
   write("Culvert %d.%d-%s started.\n\n", Culvert.MAJOR, Culvert.MINOR, Culvert.BRANCH);
+#endif
   //if (!args->nodns) 
     //fe->set_new_flow_cb(precache_dns, queue);
   if (args->logfile) {
@@ -78,6 +84,7 @@ int main(int argc, array argv) {
     fe->set_expired_flow_cb(log, queue, logfile, !args->nodns);
   }
   fe->set_flow_statechange_cb(lambda(mixed f, int o, int n) { write("%d:%d %s\n", o, n, f->english(!args->nodns,1)); } );
+  fe->set_log_flow_cb(print_stats, fe);
 
   object cap = Public.Network.Pcap.Pcap();
   cap->set_capture_length(args->snaplen||snaplen);
@@ -92,7 +99,6 @@ int main(int argc, array argv) {
   if (args->filter)
     cap->set_filter(args->filter);
   cap->set_promisc(1);
-  int start_threads = args->threads||threads;
   if (start_threads) {
     for (int i=0; i < start_threads; i++) {
       Thread.thread_create(dequeue, queue);
@@ -111,6 +117,10 @@ int main(int argc, array argv) {
     call_out(top_ten, args->topten, fe, !args->nodns, args->topten);
 
   return -1;
+}
+
+void print_stats(object fe) {
+  write("Total flows: %d.\nTotal bytes: %d.\nMax flows: %d.\nCurrent flows: %d.\n", fe->total_flows, fe->total_bytes, fe->max_flows, fe->current_flows);
 }
 
 void dispatch(object cap, object queue, object fe) {
