@@ -42,6 +42,7 @@ constant options =
     ({ "help", Getopt.NO_ARG, ({ "-h", "--help" }) }),
     ({ "threads", Getopt.HAS_ARG, ({ "-t", "--threads" }) }),
     ({ "topten", Getopt.HAS_ARG, ({ "--interval" }) }),
+    ({ "hilfe", Getopt.NO_ARG, ({ "--hilfe" }) }),
   });
 
 
@@ -65,15 +66,19 @@ int main(int argc, array argv) {
   if (args->topten)
     args->topten = (int)args->topten;
 
+#ifdef ENABLE_THREADS
+  if ((!args->threads) || (args->threads == 0))
+    args->threads = threads;
+#endif
+
   //object queue = Thread.Fifo(2000);
   object queue = Thread.Fifo(threads||args->threads);
   //object queue = Thread.Queue();
 
 
   object fe = IP.Flow.Engine();
-  int start_threads = args->threads||threads;
 #ifdef ENABLE_THREADS
-  write("Culvert %d.%d-%s started with %d worker threads.\n\n", Culvert.MAJOR, Culvert.MINOR, Culvert.BRANCH, start_threads);
+  write("Culvert %d.%d-%s started with %d worker threads.\n\n", Culvert.MAJOR, Culvert.MINOR, Culvert.BRANCH, args->threads);
 #else
   write("Culvert %d.%d-%s started.\n\n", Culvert.MAJOR, Culvert.MINOR, Culvert.BRANCH);
 #endif
@@ -83,8 +88,7 @@ int main(int argc, array argv) {
     object logfile = Stdio.File(args->logfile, "cwa");
     fe->set_expired_flow_cb(log, queue, logfile, !args->nodns);
   }
-  fe->set_flow_statechange_cb(lambda(mixed f, int o, int n) { write("%d:%d %s\n", o, n, f->english(!args->nodns,1)); } );
-  fe->set_log_flow_cb(print_stats, fe);
+  //fe->set_flow_statechange_cb(lambda(mixed f, int o, int n) { write("%s\n", f->english(!args->nodns,1)); } );
 
   object cap = Public.Network.Pcap.Pcap();
   cap->set_capture_length(args->snaplen||snaplen);
@@ -99,8 +103,8 @@ int main(int argc, array argv) {
   if (args->filter)
     cap->set_filter(args->filter);
   cap->set_promisc(1);
-  if (start_threads) {
-    for (int i=0; i < start_threads; i++) {
+  if (args->threads) {
+    for (int i=0; i < args->threads; i++) {
       Thread.thread_create(dequeue, queue);
     }
     Thread.thread_create(dispatch, cap, queue, fe);
@@ -111,16 +115,18 @@ int main(int argc, array argv) {
     dispatch(cap,queue,fe);
   }
 
-  if (args->topten && start_threads)
+  if (args->topten && args->threads)
     Thread.thread_create(do_top_ten, fe, !args->nodns, args->topten);
   else if (args->topten)
     call_out(top_ten, args->topten, fe, !args->nodns, args->topten);
 
-  return -1;
-}
+  if (args->hilfe) {
+    add_constant("capture", cap);
+    add_constant("flow_engine", fe);
+    Tools.Hilfe.StdinHilfe();
+  }
 
-void print_stats(object fe) {
-  write("Total flows: %d.\nTotal bytes: %d.\nMax flows: %d.\nCurrent flows: %d.\n", fe->total_flows, fe->total_bytes, fe->max_flows, fe->current_flows);
+  return -1;
 }
 
 void dispatch(object cap, object queue, object fe) {
@@ -198,23 +204,21 @@ void do_top_ten(object fe, int dns, int interval) {
 }
 
 void top_ten(object fe, int dns, void|int interval) {
-  mapping status = fe->status();
-  if (sizeof(status)) {
-    array flows = status->flows;
-    sort(flows, flows->bytes);
-    flows = reverse(flows);
-    write("Total Flows: %d\tTotal Bytes: %s\tTotal Packets: %d\n", status->flowcount, status->bytes, status->packets);
-    int z = 10;
-    if (sizeof(flows) < 10)
-      z = sizeof(flows);
-    write("Top %d flows:\n", z);
-    for (int i; i < z; i++) {
-      object f = flows[i];
-      if (f)
-	write("%s\n", f->english(dns,1));
-    }
-    write("\n");
+  array flows = (array)fe->flows;
+  sort(flows->bytes, flows);
+  flows = reverse(flows);
+  write("Total flows: %d.\tTotal bytes: %s.\tMax flows: %d.\tCurrent flows: %d.\tThreads: %d\n", fe->total_flows, replace(String.int2size(fe->total_bytes), "b", "B"), fe->max_flows, fe->current_flows, sizeof(Thread.all_threads()));
+  int z = 10;
+  if (sizeof(flows) < 10)
+    z = sizeof(flows);
+  write("Top %d flows:\n", z);
+  for (int i; i < z; i++) {
+    object f = flows[i];
+    if (f)
+      write("%s\n", f->english(dns,1));
   }
+  write("\n");
+  
   if (interval)
     call_out(top_ten, interval, fe, dns, interval);
 }

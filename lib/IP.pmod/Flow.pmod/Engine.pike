@@ -177,10 +177,6 @@ static void state_cb(mixed hash, int oldstate, int newstate) {
 }
 
 
-mapping status() {
-  return flows->status();
-}
-
 string hash(object ip, object p) {
   string a, b, c, d, f;
   if (ip->next_header) {
@@ -416,24 +412,6 @@ class FlowContainer {
     return values(flows);
   }
 
-  mapping status() {
-    LOCK;
-    if (sizeof(flows)) {
-      array f = values(flows);
-      sort(f->bytes, f);
-      reverse(f);
-      return ([
-	  "flowcount" : total_flows,
-	  "bytes" : replace(String.int2size(total_bytes), "b", "B"),
-	  "packets" : total_packets,
-	  "dropped" : drop,
-	  "flows" : f,
-	  ]);
-    }
-    else
-      return ([]);
-  }
-
   int `max() {
     return _max;
   }
@@ -441,6 +419,15 @@ class FlowContainer {
   int `max=(int x) {
     LOCK;
     return _max = x;
+  }
+
+  mixed cast(string type) {
+    switch (type) {
+      case "array":
+	return values(flows);
+      case "int":
+	return _sizeof();
+    }
   }
 
 }
