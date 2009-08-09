@@ -102,6 +102,9 @@ int main(int argc, array argv) {
   }
   if (args->filter)
     cap->set_filter(args->filter);
+  else 
+    // We can only decode TCP and UDP flows at the moment anyway.
+    cap->set_filter("tcp or udp");
   cap->set_promisc(1);
   if (args->threads) {
     for (int i=0; i < args->threads; i++) {
