@@ -108,16 +108,36 @@ string scope() {
       sscanf(inttoipex(ip), "%*4x:%4x:%4x:%*s", a, b);
       s = sprintf("GLOBAL UNICAST (6to4: %s)", (string)IP.v4.Address((a<<16)+b));
     }
-    if (IP.v6.Prefix("2001::/32")->contains(this_object())) {
+    else if (IP.v6.Prefix("2001::/32")->contains(this_object())) {
       // teredo
       int server_ip = ((ip >> 64) & ((1<<32)-1));
       int client_ip = (ip & ((1<<32)-1)) ^ ((1<<32)-1);
       int udp_port = ((ip >> 32) & ((1<<16)-1));
       s = sprintf("GLOBAL UNICAST (Teredo %s:%d -> %s:%d)", (string)IP.v4.Address(client_ip), udp_port, (string)IP.v4.Address(server_ip), udp_port);
     }
+    else if (IP.v6.Prefix("2001:10::/28")->contains(this_object()))
+      s = "ORCHID";
+    else if (IP.v6.Prefix("2001:db8::/32")->contains(this_object()))
+      s = "DOCUMENTATION";
+  }
+  else if (IP.v6.Prefix("::/128")->contains(this_object()))
+    s = "UNSPECIFIED ADDRESS";
+  else if (IP.v6.Prefix("::1/128")->contains(this_object()))
+    s = "LINK LOCAL LOOPBACK";
+  else if (IP.v6.Prefix("::ffff:0:0/96")->contains(this_object())) {
+    int a,b,c,d;
+    sscanf(inttoipex(ip), "%*4x:%*4x:%*4x:%*4x:%*4x:%*4x:%*4x:%*4x:%*4x:%*4x:%*4x:%*4x:%4x:%4x:%4x:%4x", a,b,c,d);
+    s = sprintf("IPv4 MAPPED (%d.%d.%d.%d)", a,b,c,d);
+  }
+  else if (IP.v6.Prefix("::/96")->contains(this_object())) {
+    int a,b,c,d;
+    sscanf(inttoipex(ip), "%*4x:%*4x:%*4x:%*4x:%*4x:%*4x:%*4x:%*4x:%*4x:%*4x:%*4x:%*4x:%4x:%4x:%4x:%4x", a,b,c,d);
+    s = sprintf("IPv4 TRANSITION (%d.%d.%d.%d deprecated)", a,b,c,d);
   }
   else if (IP.v6.Prefix("fc00::/7")->contains(this_object()))
     s = "UNIQUE LOCAL UNICAST";
+  else if (IP.v6.Prefix("fec0::/10")->constains(this_object()))
+    s = "SITE LOCAL (deprecated)";
   else if (IP.v6.Prefix("fe80::/10")->contains(this_object()))
     s = "LINK LOCAL UNICAST";
   else if (IP.v6.Prefix("ff00::/8")->contains(this_object())) {

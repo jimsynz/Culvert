@@ -78,39 +78,48 @@ string reverse() {
  return (predef::reverse(inttoip(ip) / ".") * ".") + ".in-addr.arpa";
 }
 
+//!
+//! See: http://en.wikipedia.org/wiki/IPv4#Allocation
+//!
 string scope() {
   string s = "GLOBAL UNICAST";
-  if (IP.v4.Prefix("224.0.0.0/4")->contains(this_object())) {
+  if (IP.v4.Prefix("0.0.0.0/8")->contains(this_object()))
+    s = "CURRENT NETWORK";
+  else if (IP.v4.Prefix("10.0.0.0/8")->contains(this_object()))
+    s = "RFC1918 PRIVATE";
+  else if (IP.v4.Prefix("14.0.0.0/8")->contains(this_object()))
+    s = "PUBLIC DATA";
+  else if (IP.v4.Prefix("127.0.0.0/8")->contains(this_object()))
+    s = "LOOPBACK";
+  else if (IP.v4.Prefix("128.0.0.0/16")->contains(this_object()))
+    s = "RESERVED (IANA)";
+  else if (IP.v4.Prefix("169.254.0.0/16")->contains(this_object()))
+    s = "AUTOCONF PRIVATE";
+  else if (IP.v4.Prefix("172.16.0.0/12")->contains(this_object()))
+    s = "RFC1918 PRIVATE";
+  else if (IP.v4.Prefix("191.255.0.0/16")->contains(this_object()))
+    s = "RESERVED (IANA)";
+  else if (IP.v4.Prefix("192.0.0.0/24")->contains(this_object()))
+    s = "RESERVED (IANA)";
+  else if (IP.v4.Prefix("192.0.2.0/24")->contains(this_object()))
+    s = "DOCUMENTATION";
+  else if (IP.v4.Prefix("192.88.99.0/24")->contains(this_object()))
+    s = "6to4 ANYCAST";
+  else if (IP.v4.Prefix("192.168.0.0/16")->contains(this_object()))
+    s = "RFC1918 PRIVATE";
+  else if (IP.v4.Prefix("198.18.0.0/15")->contains(this_object()))
+    s = "NETWORK BENCHMARK TESTS";
+  else if (IP.v4.Prefix("223.255.255.0/24")->contains(this_object()))
+    s = "RESERVED (IANA)";
+  else if (IP.v4.Prefix("224.0.0.0/4")->contains(this_object())) {
     s = "GLOBAL MULTICAST";
     if (IP.v4.Prefix("239.0.0.0/8")->contains(this_object()))
       s = "LOCAL MULTICAST";
   }
-  else if (IP.v4.Prefix("192.168.0.0/16")->contains(this_object()))
-    s = "RFC1918 PRIVATE";
-  else if (IP.v4.Prefix("10.0.0.0/8")->contains(this_object()))
-    s = "RFC1918 PRIVATE";
-  else if (IP.v4.Prefix("172.16.0.0/12")->contains(this_object()))
-    s = "RFC1918 PRIVATE";
-  else if (IP.v4.Prefix("169.254.0.0/16")->contains(this_object()))
-    s = "PRIVATE";
-  else if (IP.v4.Prefix("127.0.0.0/8")->contains(this_object()))
-    s = "LOOPBACK";
-  else if (IP.v4.Prefix("192.88.99.0/24")->contains(this_object()))
-    s = "GLOBAL UNICAST (6to4 ANYCAST)";
-  else if (IP.v4.Prefix("198.18.0.0/15")->contains(this_object()))
-    s = "NETWORK BENCHMARK TESTS";
-  else if (IP.v4.Address("255.255.255.255") == this_object())
-    s = "GLOBAL BROADCAST";
-  else if (IP.v4.Prefix("128.0.0.0/16")->contains(this_object()))
-    s = "RESERVED (IANA)";
-  else if (IP.v4.Prefix("191.255.0.0/16")->contains(this_object()))
-    s = "RESERVED (IANA)";
-  else if (IP.v4.Prefix("223.255.255.0/24")->contains(this_object()))
-    s = "RESERVED (IANA)";
   else if (IP.v4.Prefix("240.0.0.0/4")->contains(this_object()))
     s = "RESERVED";
-  else if (IP.v4.Address(0) == this_object())
-    s = "DEFAULT";
+  else if (IP.v4.Address("255.255.255.255") == this_object())
+    s = "GLOBAL BROADCAST";
   return s;
 }
 

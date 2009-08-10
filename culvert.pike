@@ -72,7 +72,7 @@ int main(int argc, array argv) {
 #endif
 
   //object queue = Thread.Fifo(2000);
-  object queue = Thread.Fifo(threads||args->threads);
+  object queue = Thread.Fifo(args->threads);
   //object queue = Thread.Queue();
 
 
