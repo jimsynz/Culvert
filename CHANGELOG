@@ -1,5 +1,9 @@
 Culvert changelog.
 
+2009/08/10:
+  - Started adding support for collecting NetFlow packets sent from
+    network equipment.
+
 2009/08/06:
   - Fixed up some threadding issues including an accidental deadlock.
 
