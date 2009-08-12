@@ -25,6 +25,7 @@
 
 //! This module provides handy helpers to the IP.v4 modules.
 
+#define MAX 4294967295
 
 //! Convert an IP address to a 32 bit integer.
 //!
@@ -40,15 +41,17 @@ int iptoint(string _ip) {
 //! @param _ip
 //!   The IP address to convert.
 string inttoip(int _ip) {
-  string ip = "";
-  ip += (string)(_ip >> 24);
-  ip += ".";
-  ip += (string)((_ip >> 16) - ((_ip >> 24) * 256));
-  ip += ".";
-  ip += (string)((_ip >> 8) - ((_ip >> 16) * 256));
-  ip += ".";
-  ip += (string)((_ip) - ((_ip >> 8) * 256));
-  return ip;
+  if (_ip > MAX)
+    throw(Error.Generic("IP address too large"));
+  if (_ip < 0)
+    throw(Error.Generic("Cannot have negative IP address"));
+  array exp = allocate(4);
+  for (int i = 0; i < 4; i++) {
+    int x = (3 - i) * 8;
+    int y = (4 - i) * 8;
+    exp[i] = sprintf("%d", ((_ip >> x) - ((_ip >> y) * 256)));
+  }
+  return exp * ".";
 }
 
 //! Find the network address for the given address and mask.

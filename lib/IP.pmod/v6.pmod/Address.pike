@@ -136,7 +136,7 @@ string scope() {
   }
   else if (IP.v6.Prefix("fc00::/7")->contains(this_object()))
     s = "UNIQUE LOCAL UNICAST";
-  else if (IP.v6.Prefix("fec0::/10")->constains(this_object()))
+  else if (IP.v6.Prefix("fec0::/10")->contains(this_object()))
     s = "SITE LOCAL (deprecated)";
   else if (IP.v6.Prefix("fe80::/10")->contains(this_object()))
     s = "LINK LOCAL UNICAST";

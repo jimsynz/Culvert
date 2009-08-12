@@ -110,11 +110,13 @@ static int iptoint(string _ip) {
     array tmp = allocate(8, "0");
     array _tmp = parts[0] / ":";
     for (int i = 0; i < sizeof(_tmp); i++) {
-      tmp[i] = (_tmp[i]==""?0:_tmp[i]);
+      string octet = _tmp[i];
+      tmp[i] = (octet==""?"0":octet);
     }
     _tmp = parts[1] / ":";
     for (int i = 0; i < sizeof(_tmp); i++) {
-      tmp[7 - i] = (_tmp[sizeof(_tmp)- 1 - i]==""?"0":_tmp[sizeof(_tmp)- 1 - i]);
+      string octet = _tmp[sizeof(_tmp)-(1+i)];
+      tmp[7 - i] = octet==""?"0":octet;
     }
     return parse_expanded_ip6(tmp * ":");
   }
@@ -150,10 +152,7 @@ string inttoip(int _ip) {
   for (int i = 0; i < 8; i++) {
     int x = (7 - i) * 16;
     int y = (8 - i) * 16;
-    exp[i] = (_ip >> x) - ((_ip >> y) * 65536);
-  }
-  for (int i = 0; i < 8; i++) {
-    exp[i] = sprintf("%x", exp[i]);
+    exp[i] = sprintf("%x", (_ip >> x) - ((_ip >> y) * 65536));
   }
   int x,y,z;
   array out = ({});
