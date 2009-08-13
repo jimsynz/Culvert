@@ -54,6 +54,21 @@ void create(string prefix) {
   }
 }
 
+IP.v6.Address eui_64(int|string mac) {
+  if (len != 64) 
+    throw(Error.Generic("Can only generate EUI-64 address for a 64 bit prefix."));
+  if (intp(mac))
+    mac = sprintf("%:012x", mac);
+  mac = lower_case((mac / ":") * "");
+  if (sizeof(array_sscanf(mac, "%{%1x%}")[0]) != 12)
+    throw(Error.Generic("Not a valid 48 bit MAC address."));
+  mac = mac[0..5] + "fffe" + mac[6..11];
+  int e64;
+  sscanf(mac, "%16x", e64);
+  e64 = e64 ^ 0x0200000000000000;
+  return IP.v6.Address((int)network() + e64);
+}
+
 static IP.v6.Address `ip() {
   return _ip;
 }
