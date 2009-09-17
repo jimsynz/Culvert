@@ -26,6 +26,7 @@
 //! This module provides handy helpers to the IP.v4 modules.
 
 #define MAX 4294967295
+#define MASK 0xffffffff
 
 //! Convert an IP address to a 32 bit integer.
 //!
@@ -74,7 +75,7 @@ int network(int ip, int mask) {
 //!   A netmask.
 int broadcast(int ip, int mask) {
   int net = ip & mask;
-  int _msk = mask ^ 4294967295;
+  int _msk = mask ^ MASK;
   return net | _msk;
 }
 
@@ -84,7 +85,7 @@ int broadcast(int ip, int mask) {
 //!   A prefix length.
 int lengthtoint(int length) {
   if (length == 32)
-    return 4294967295;
+    return MASK;
   else if (length < 32)
     return (int)((int)pow(2,32) - (int)pow(2,(32 -length)));
 }

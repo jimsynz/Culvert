@@ -6,9 +6,10 @@ static object _mutex = Thread.Mutex();
 #define LOCK object __key = _mutex->lock(1)
 #define UNLOCK destruct(__key)
 static mapping _dns_cache = ([]);
+static mapping _host_cache = ([]);
 static int __start;
 
-void|string lookup_ip(string ip, void|function cb) {
+static void|string lookup(string ip, string using, void|function cb) {
   if (!_start)
     start();
   if (dns_cache[ip] && dns_cache[ip]->t > time() - TTL) 
@@ -17,14 +18,29 @@ void|string lookup_ip(string ip, void|function cb) {
     else
       return dns_cache[ip]->h;
   else if (functionp(cb))
-    Protocols.DNS.async_ip_to_host(ip, lambda(string ip, string host) { dns_cache[ip] = ([ "t" : time(), "h" : host ]); cb(host); });
+    if (using == "host")
+      Protocols.DNS.async_host_to_ip(ip, lambda(string ip, string host) { dns_cache[ip] = ([ "t" : time(), "h" : host ]); cb(host); });
+    else 
+      Protocols.DNS.async_ip_to_host(ip, lambda(string ip, string host) { dns_cache[ip] = ([ "t" : time(), "h" : host ]); cb(host); });
   else {
     string host;
-    array tmp = Protocols.DNS.gethostbyaddr(ip);
+    array tmp;
+    if (using == "host")
+      tmp = Protocols.DNS.gethostbyaddr(ip);
+    else
+      tmp = Protocols.DNS.gethostbyname(ip);
     host = tmp[0];
     dns_cache[ip] = ([ "t" : time(), "h" : host ]);
     return host;
   }
+}
+
+void|string lookup_ip(string ip, void|function cb) {
+  lookup(ip, "ip", cb);
+}
+
+void|string lookup_host(string host, void|function cb) {
+  lookup(host, "host", cb);
 }
 
 static void start() {

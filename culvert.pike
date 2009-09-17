@@ -45,10 +45,10 @@ constant options =
     ({ "hilfe", Getopt.NO_ARG, ({ "--hilfe" }) }),
   });
 
-
 int main(int argc, array argv) {
 
   mapping args = (mapping)Getopt.find_all_options(argv, options, 0);
+
   if (args->help) {
     werror("No help for you. Sorry.\n\n");
     return 1;
@@ -158,7 +158,7 @@ void precache_dns(object flow, object queue) {
   queue->write(({ IP.Flow.DNSCache->lookup_ip,(string)flow->dst }));
 #else
   catch(IP.Flow.DNSCache->lookup_ip((string)flow->src));
-  catch(IP.Flow.DNSCache->lookup_up((string)flow->dst));
+  catch(IP.Flow.DNSCache->lookup_ip((string)flow->dst));
 #endif
 }
 

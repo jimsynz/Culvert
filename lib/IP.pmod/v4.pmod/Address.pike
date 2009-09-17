@@ -46,12 +46,15 @@ void create(int|string _ip, void|int dns) {
   if (intp(_ip))
     ip = _ip;
   else if (stringp(_ip)) {
-    int a,b,c,d;
-    if (sscanf(_ip, "%d.%d.%d.%d", a,b,c,d) == 4)
+    if (sscanf(_ip, "%*d.%*d.%*d.%*d") == 4)
       ip = iptoint(_ip);
     else {
       array h;
+#ifdef IP.Flow.DNSCache
+      if (h = IP.Flow.DNSCache.lookup_host(_ip)) {
+#else 
       if (h = gethostbyname(_ip)) {
+#endif
 	if (arrayp(h) && arrayp(h[1]) && sizeof(h[1]))
 	  ip = iptoint(h[1][0]);
 	else
