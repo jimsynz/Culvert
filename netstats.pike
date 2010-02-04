@@ -194,12 +194,13 @@ void time_tcp_session(object flow) {
     float setup_time = second - first;
     flow_setup_times += ({ setup_time });
     if (sizeof(flow_setup_times) == 1) {
-      setup_time_report();
+      Thread.thread_create(setup_time_report);
     }
   }
 }
 
 void setup_time_report() {
-  write("Average flow setup time %fms.\n", (`+(@flow_setup_times)/sizeof(flow_setup_times)) * 100);
-  call_out(setup_time_report, 10);
+  write("%s: Average flow setup time %fms.\n", Calendar.now()->format_time(), (`+(@flow_setup_times)/sizeof(flow_setup_times)) * 100);
+  sleep(10);
+  setup_time_report();
 }
