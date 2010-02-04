@@ -42,7 +42,10 @@ constant options =
     ({ "threads", Getopt.HAS_ARG, ({ "-t", "--threads" }) }),
   });
 
-array flow_setup_times = ({});
+object five_minute_avg;
+object one_hour_avg;
+object one_day_avg;
+object one_month_avg;
 
 int main(int argc, array argv) {
 
@@ -66,9 +69,7 @@ int main(int argc, array argv) {
     args->threads = threads;
 #endif
 
-  //object queue = Thread.Fifo(2000);
   object queue = Thread.Fifo(args->threads);
-  //object queue = Thread.Queue();
 
 
   object fe = IP.Flow.Engine();
@@ -77,15 +78,20 @@ int main(int argc, array argv) {
 #else
   write("Culvert %d.%d-%s started.\n\n", Culvert.MAJOR, Culvert.MINOR, Culvert.BRANCH);
 #endif
-  //if (!args->nodns) 
-    //fe->set_new_flow_cb(precache_dns, queue);
+
+  five_minute_avg = SampleJar(5 * 60);
+  one_hour_avg = SampleJar(60 * 60);
+  one_day_avg = SampleJar(60 * 60 * 24);
+  one_month_avg = SampleJar(60 * 60 * 24 * 31);
+
   if (args->logfile) {
     object logfile = Stdio.File(args->logfile, "cwa");
     fe->set_expired_flow_cb(log, queue, logfile, !args->nodns);
   }
   else
     fe->set_expired_flow_cb(time_tcp_session);
-  //fe->set_flow_statechange_cb(lambda(mixed f, int o, int n) { write("%s\n", f->english(!args->nodns,1)); } );
+
+  Thread.thread_create(setup_time_report);
 
   object cap = Public.Network.Pcap.Pcap();
   cap->set_capture_length(args->snaplen||snaplen);
@@ -100,7 +106,7 @@ int main(int argc, array argv) {
   if (args->filter)
     cap->set_filter(args->filter);
   else 
-    // We can only decode TCP and UDP flows at the moment anyway.
+    // We're only interested in TCP session setup.
     cap->set_filter("tcp");
   cap->set_promisc(1);
   if (args->threads) {
@@ -151,7 +157,8 @@ void precache_dns(object flow, object queue) {
 void log(object flow, object queue, object logfile, int dns) {
 #ifdef ENABLE_THREADS
   queue->write(({ lambda() { catch(logfile->write("%s\n", flow->english(dns, 1))); } }));
-  queue->write(({ lambda() { time_tcp_session(flow); }}));
+  // queue->write(({ lambda() { time_tcp_session(flow); }}));
+  time_tcp_session(flow);
 #else
   catch(logfile->write("%s\n", flow->english(dns, 1)));
   time_tcp_session(flow);
@@ -189,18 +196,127 @@ void desplat(object fe, mixed ... args) {
 
 void time_tcp_session(object flow) {
   if (sizeof(flow->conversation) > 1) {
-    float first = flow->conversation[0]->time;
-    float second = flow->conversation[1]->time;
-    float setup_time = second - first;
-    flow_setup_times += ({ setup_time });
-    if (sizeof(flow_setup_times) == 1) {
-      Thread.thread_create(setup_time_report);
+    // If we started capturing in the middle of a flow then just ignore it.
+    if (flow->conversation[0]->packet->flags["SYN"]) {
+      float first = flow->conversation[0]->time;
+      float second;
+      for (int i=1; i < sizeof(flow->conversation); i++) {
+	if (flow->conversation[i]->packet->flags["ACK"]) {
+	  second = flow->conversation[i]->time;
+	  break;
+	}
+      }
+      if (second > first) {
+	// * 100 to get ms instead of s.
+	float setup_time = (second - first) * 100;
+	one_month_avg->add(setup_time);
+	one_day_avg->add(setup_time);
+	one_hour_avg->add(setup_time);
+	five_minute_avg->add(setup_time);
+      }
+      // else just discard this session, it ain't much
+      // use to us.
     }
   }
 }
 
 void setup_time_report() {
-  write("%s: Average flow setup time %fms.\n", Calendar.now()->format_time(), (`+(@flow_setup_times)/sizeof(flow_setup_times)) * 100);
-  sleep(10);
-  setup_time_report();
+  write("[time]: [sample length]([min] ms, [max] ms, [avg] ms, [count])\n");
+  while (1) {
+    write("%s: 5m (%f ms, %f ms, %f ms, %d), 1h (%f ms, %f ms, %f ms, %d), 1d (%f ms, %f ms, %f ms, %d), 1M (%f ms, %f ms, %f ms, %d)\n",
+	Calendar.now()->format_time(), 
+	five_minute_avg->min(), five_minute_avg->max(), five_minute_avg->avg(), five_minute_avg->count(),
+	one_hour_avg->min(), one_hour_avg->max(), one_hour_avg->avg(), one_hour_avg->count(),
+	one_day_avg->min(), one_day_avg->max(), one_day_avg->avg(), one_day_avg->count(), 
+	one_month_avg->min(), one_month_avg->max(), one_month_avg->avg(), one_month_avg->count()
+	);
+    sleep(2);
+  }
+}
+
+class SampleJar {
+  int age_limit;
+  array samples;
+  int start_time;
+  object lock = Thread.Mutex();
+  void create(int limit) {
+    // Not sure about passing Calendar.Hour, etc, so let's just work
+    // in integer seconds. Easier.
+    object key = lock->lock();
+    age_limit = limit;
+    samples = ({});
+    start_time = time();
+  }
+
+  int add(float sample) {
+    // Add a sample to the sample pool.
+    object key = lock->lock();
+    samples += ({ ([ "time" : (start_time + time(start_time)), "sample" : sample ]) });
+    destruct(key);
+    return sizeof(samples);
+  }
+  
+  int clean() {
+    // Removes too old samples from the jar.
+    // We can safely assume that older samples
+    // are at the beginning of the array.
+    int culled;
+    if (sizeof(samples) > 0) {
+      mapping sample = samples[0];
+      while (sample->time < (start_time + time(start_time) - age_limit)) {
+	// remove.
+	culled++;
+	object key = lock->lock();
+	samples = samples[1..];
+	destruct(key);
+	// Escape hatch for accidentally empty sample jars.
+	if (sizeof(samples) > 0) 
+	  sample = samples[0];
+	else
+	  sample = ([ "time" : 0 ]);
+      }
+    }
+    return culled;
+  }
+
+  float min() {
+    clean();
+    if (sizeof(samples)) {
+      array x = samples->sample;
+      return sort(x)[0];
+    }
+    else {
+      return 0.0;
+    }
+  }
+
+  float max() {
+    clean();
+    if (sizeof(samples)) {
+      array x = samples->sample;
+      return reverse(sort(x))[0];
+    }
+    else {
+      return 0.0;
+    }
+  }
+
+  float avg() {
+    clean();
+    if (sizeof(samples)) {
+      array x = samples->sample;
+      return `+(@x) / sizeof(x);
+    }
+    else {
+      return 0.0;
+    }
+  }
+
+  int count() {
+    return sizeof(samples);
+  }
+
+  string _sprintf() {
+    return sprintf("SampleJar(/* %d seconds */)", age_limit);
+  }
 }
