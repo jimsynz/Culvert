@@ -84,14 +84,9 @@ int main(int argc, array argv) {
   one_day_avg = SampleJar(60 * 60 * 24);
   one_month_avg = SampleJar(60 * 60 * 24 * 31);
 
-  if (args->logfile) {
-    object logfile = Stdio.File(args->logfile, "cwa");
-    fe->set_expired_flow_cb(log, queue, logfile, !args->nodns);
-  }
-  else
-    fe->set_expired_flow_cb(time_tcp_session);
+  fe->set_expired_flow_cb(time_tcp_session);
 
-  Thread.thread_create(setup_time_report);
+  Thread.thread_create(setup_time_report, args->logfile);
 
   object cap = Public.Network.Pcap.Pcap();
   cap->set_capture_length(args->snaplen||snaplen);
@@ -178,10 +173,10 @@ void desplat(object fe, mixed ... args) {
 	mixed err = catch(sixtofour = IP.v6.Packet(packet->data, 1));
 	if (err)
 	  write("%O\n", err);
-	fe->packet(sixtofour);
+	catch(fe->packet(sixtofour));
       }
       else 
-	fe->packet(packet);
+	catch(fe->packet(packet));
     }
   }
   else if (frame->type->name() == "IPv6") {
@@ -190,7 +185,7 @@ void desplat(object fe, mixed ... args) {
     if (err)
       write("%O\n", err);
     else
-      fe->packet(packet);
+      catch(fe->packet(packet));
   }
 }
 
@@ -220,17 +215,32 @@ void time_tcp_session(object flow) {
   }
 }
 
-void setup_time_report() {
-  write("[time]: [sample length]([min] ms, [max] ms, [avg] ms, [count])\n");
-  while (1) {
-    write("%s: 5m (%f ms, %f ms, %f ms, %d), 1h (%f ms, %f ms, %f ms, %d), 1d (%f ms, %f ms, %f ms, %d), 1M (%f ms, %f ms, %f ms, %d)\n",
-	Calendar.now()->format_time(), 
-	five_minute_avg->min(), five_minute_avg->max(), five_minute_avg->avg(), five_minute_avg->count(),
-	one_hour_avg->min(), one_hour_avg->max(), one_hour_avg->avg(), one_hour_avg->count(),
-	one_day_avg->min(), one_day_avg->max(), one_day_avg->avg(), one_day_avg->count(), 
-	one_month_avg->min(), one_month_avg->max(), one_month_avg->avg(), one_month_avg->count()
-	);
-    sleep(2);
+void setup_time_report(void|string logfile) {
+  if (stringp(logfile)) {
+    while (1) {
+      object log = Stdio.File(logfile, "cwa");
+      log->write("%s: 5m (%f ms, %f ms, %f ms, %d), 1h (%f ms, %f ms, %f ms, %d), 1d (%f ms, %f ms, %f ms, %d), 1M (%f ms, %f ms, %f ms, %d)\n",
+	  Calendar.now()->format_time(), 
+	  five_minute_avg->min(), five_minute_avg->max(), five_minute_avg->avg(), five_minute_avg->count(),
+	  one_hour_avg->min(), one_hour_avg->max(), one_hour_avg->avg(), one_hour_avg->count(),
+	  one_day_avg->min(), one_day_avg->max(), one_day_avg->avg(), one_day_avg->count(), 
+	  one_month_avg->min(), one_month_avg->max(), one_month_avg->avg(), one_month_avg->count()
+	  );
+      sleep(30);
+    }
+  }
+  else {
+    write("[time]: [sample length]([min] ms, [max] ms, [avg] ms, [count])\n");
+    while (1) {
+      write("%s: 5m (%f ms, %f ms, %f ms, %d), 1h (%f ms, %f ms, %f ms, %d), 1d (%f ms, %f ms, %f ms, %d), 1M (%f ms, %f ms, %f ms, %d)\n",
+	  Calendar.now()->format_time(), 
+	  five_minute_avg->min(), five_minute_avg->max(), five_minute_avg->avg(), five_minute_avg->count(),
+	  one_hour_avg->min(), one_hour_avg->max(), one_hour_avg->avg(), one_hour_avg->count(),
+	  one_day_avg->min(), one_day_avg->max(), one_day_avg->avg(), one_day_avg->count(), 
+	  one_month_avg->min(), one_month_avg->max(), one_month_avg->avg(), one_month_avg->count()
+	  );
+      sleep(2);
+    }
   }
 }
 
